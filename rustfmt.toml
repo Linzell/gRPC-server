@@ -1,0 +1,9 @@
+# rustfmt.toml
+
+# Equivalent to "arrowParens": "avoid"
+fn_params_layout = "Compressed"
+
+# Additional rustfmt-specific options you might want to consider:
+max_width = 100
+tab_spaces = 4
+edition = "2021"
