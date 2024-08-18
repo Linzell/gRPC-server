@@ -1,0 +1,34 @@
+[package]
+name = "api-proto"
+description = "Protobuf / API proto definitions"
+version = "0.0.1"
+authors = ["Charlie Cohen <linzellart@gmail.com>"]
+license = "GNU AGPLv3"
+edition = "2021"
+
+[features]
+default = ["api", "json"]
+api = ["tonic/transport", "tonic-build/transport", "tokio"]
+json = ["pbjson", "pbjson-types", "serde"]
+postgres = ["dep:diesel"]
+surrealdb = []
+
+[dependencies]
+prost = "0.13"
+prost-types = "0.13"
+
+tonic = { workspace = true, features = [
+    "codegen",
+    "prost",
+], default-features = false, optional = true }
+tokio = { workspace = true, features = ["macros"], optional = true }
+pbjson = { version = "0.7", optional = true }
+pbjson-types = { version = "0.7", optional = true }
+serde = { workspace = true, optional = true }
+diesel = { version = "2.2", features = ["postgres_backend"], optional = true }
+
+[build-dependencies]
+tonic-build = { version = "0.12", features = [
+    "prost",
+], default-features = false }
+pbjson-build = "0.7"

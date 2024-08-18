@@ -1,12 +1,23 @@
-[package]
-name = "api-client"
-authors = ["Charlie Cohen <linzellart@gmail.com>"]
-version = "0.0.1"
-edition = "2021"
-
 [workspace]
+resolver = "2"
+members = ["api-client", "api-proto"]
 
-[dependencies]
+[workspace.dependencies]
+# Local dependencies
+api-client = { path = "api-client" }
+api-proto = { path = "api-proto" }
 
-[build-dependencies]
-tonic-build = "0.12.1"
+# Global dependencies
+axum = "0.7.5"
+dotenv = "0.15.0"
+http = "1.1.0"
+tokio = "1.39.3"
+tonic = "0.12.1"
+tower-http = "0.5.2"
+tracing = "0.1.40"
+serde = "1.0.130"
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
