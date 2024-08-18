@@ -41,48 +41,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .build(&[".common"])?;
     }
 
-    tonic_build::configure()
+    #[allow(unused_mut)]
+    let mut builder = tonic_build::configure()
         .out_dir(out_dir.join("client"))
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("client").join("proto_descriptor.bin"))
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
-        .extern_path(".common", "crate::common")
-        .compile(
-            &[
-                proto_dir
-                    .join("client/v1")
-                    .join("notifications.proto")
-                    .to_str()
-                    .unwrap(),
-                proto_dir
-                    .join("client/v1")
-                    .join("privacy.proto")
-                    .to_str()
-                    .unwrap(),
-                proto_dir
-                    .join("client/v1")
-                    .join("security.proto")
-                    .to_str()
-                    .unwrap(),
-                proto_dir
-                    .join("client/v1")
-                    .join("settings.proto")
-                    .to_str()
-                    .unwrap(),
-                proto_dir
-                    .join("client/v1")
-                    .join("user.proto")
-                    .to_str()
-                    .unwrap(),
-                proto_dir
-                    .join("client/v1")
-                    .join("client_service.proto")
-                    .to_str()
-                    .unwrap(),
-            ],
-            &[proto_dir.to_str().unwrap()],
-        )?;
+        .extern_path(".common", "crate::common");
+
+    #[cfg(feature = "postgres")]
+    {
+        builder = builder.message_attribute("internal.DeviceSession", "#[derive(diesel::expression::AsExpression, diesel::deserialize::FromSqlRow)] #[diesel(sql_type = diesel::sql_types::Binary)]");
+    }
+
+    builder.compile(
+        &[
+            proto_dir
+                .join("client/v1")
+                .join("notifications.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("client/v1")
+                .join("privacy.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("client/v1")
+                .join("security.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("client/v1")
+                .join("settings.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("client/v1")
+                .join("user.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("client/v1")
+                .join("client_service.proto")
+                .to_str()
+                .unwrap(),
+        ],
+        &[proto_dir.to_str().unwrap()],
+    )?;
 
     #[cfg(feature = "json")]
     {
