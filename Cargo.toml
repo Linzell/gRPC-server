@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["api-client", "api-proto"]
+members = ["kiro-client", "kiro-proto"]
 
 [workspace.dependencies]
 # Local dependencies
-api-client = { path = "api-client" }
-api-proto = { path = "api-proto" }
+kiro-client = { path = "kiro-client" }
+kiro-proto = { path = "kiro-proto" }
 
 # Global dependencies
 axum = "0.7.5"

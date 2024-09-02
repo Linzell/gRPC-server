@@ -43,6 +43,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[allow(unused_mut)]
     let mut builder = tonic_build::configure()
+        .out_dir(out_dir.join("auth"))
+        .protoc_arg("--experimental_allow_proto3_optional")
+        .file_descriptor_set_path(out_dir.join("auth").join("proto_descriptor.bin"))
+        .compile_well_known_types(true)
+        .extern_path(".google.protobuf", well_known_types_path)
+        .extern_path(".common", "crate::common");
+
+    #[cfg(feature = "postgres")]
+    {
+        builder = builder.message_attribute("internal.DeviceSession", "#[derive(diesel::expression::AsExpression, diesel::deserialize::FromSqlRow)] #[diesel(sql_type = diesel::sql_types::Binary)]");
+    }
+
+    builder.compile(
+        &[
+            proto_dir
+                .join("auth/v1")
+                .join("session.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("auth/v1")
+                .join("auth_service.proto")
+                .to_str()
+                .unwrap(),
+        ],
+        &[proto_dir.to_str().unwrap()],
+    )?;
+
+    #[cfg(feature = "json")]
+    {
+        let descriptor_set = std::fs::read(out_dir.join("auth").join("proto_descriptor.bin"))?;
+        pbjson_build::Builder::new()
+            .register_descriptors(&descriptor_set)?
+            .ignore_unknown_fields()
+            .out_dir(out_dir.join("auth"))
+            .extern_path(".common", "crate::common")
+            .build(&[".auth"])?;
+    }
+
+    #[allow(unused_mut)]
+    let mut builder = tonic_build::configure()
         .out_dir(out_dir.join("client"))
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("client").join("proto_descriptor.bin"))
@@ -100,6 +141,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .out_dir(out_dir.join("client"))
             .extern_path(".common", "crate::common")
             .build(&[".client"])?;
+    }
+
+    #[allow(unused_mut)]
+    let mut builder = tonic_build::configure()
+        .out_dir(out_dir.join("group"))
+        .protoc_arg("--experimental_allow_proto3_optional")
+        .file_descriptor_set_path(out_dir.join("group").join("proto_descriptor.bin"))
+        .compile_well_known_types(true)
+        .extern_path(".google.protobuf", well_known_types_path)
+        .extern_path(".common", "crate::common");
+
+    #[cfg(feature = "postgres")]
+    {
+        builder = builder.message_attribute("internal.DeviceSession", "#[derive(diesel::expression::AsExpression, diesel::deserialize::FromSqlRow)] #[diesel(sql_type = diesel::sql_types::Binary)]");
+    }
+
+    builder.compile(
+        &[
+            proto_dir
+                .join("group/v1")
+                .join("member.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("group/v1")
+                .join("group.proto")
+                .to_str()
+                .unwrap(),
+            proto_dir
+                .join("group/v1")
+                .join("group_service.proto")
+                .to_str()
+                .unwrap(),
+        ],
+        &[proto_dir.to_str().unwrap()],
+    )?;
+
+    #[cfg(feature = "json")]
+    {
+        let descriptor_set = std::fs::read(out_dir.join("group").join("proto_descriptor.bin"))?;
+        pbjson_build::Builder::new()
+            .register_descriptors(&descriptor_set)?
+            .ignore_unknown_fields()
+            .out_dir(out_dir.join("group"))
+            .extern_path(".common", "crate::common")
+            .build(&[".group"])?;
     }
 
     Ok(())
