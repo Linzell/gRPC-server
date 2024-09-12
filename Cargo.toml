@@ -1,18 +1,23 @@
 [workspace]
 resolver = "2"
-members = ["kiro-client", "kiro-proto"]
+members = ["kiro", "kiro-proto"]
+
+[profile.dev.package."*"]
+opt-level = 3
 
 [workspace.dependencies]
 # Local dependencies
-kiro-client = { path = "kiro-client" }
-kiro-proto = { path = "kiro-proto" }
+kiro = { path = "./kiro" }
+kiro_proto = { path = "./kiro-proto" }
 
 # Global dependencies
 axum = "0.7.5"
+diesel = "2.2"
 dotenv = "0.15.0"
 http = "1.1.0"
+lazy_static = "1.5"
 tokio = "1.39.3"
-tonic = "0.12.1"
+tonic = { version = "0.12.1", default-features = false }
 tower-http = "0.5.2"
 tracing = "0.1.40"
 serde = "1.0.130"

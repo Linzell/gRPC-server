@@ -1,10 +1,11 @@
 [package]
-name = "api-proto"
+name = "kiro_proto"
 description = "Protobuf / API proto definitions"
 version = "0.0.1"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
 license = "GNU AGPLv3"
 edition = "2021"
+publish = false
 
 [features]
 default = ["api", "json"]
@@ -14,21 +15,21 @@ postgres = ["dep:diesel"]
 surrealdb = []
 
 [dependencies]
-prost = "0.13"
-prost-types = "0.13"
+prost = { version = "0.13" }
+prost-types = { version = "0.13" }
 
-tonic = { workspace = true, features = [
-    "codegen",
-    "prost",
-], default-features = false, optional = true }
-tokio = { workspace = true, features = ["macros"], optional = true }
+diesel = { workspace = true, features = ["postgres_backend"], optional = true }
 pbjson = { version = "0.7", optional = true }
 pbjson-types = { version = "0.7", optional = true }
 serde = { workspace = true, optional = true }
-diesel = { version = "2.2", features = ["postgres_backend"], optional = true }
+tonic = { workspace = true, default-features = false, features = [
+    "codegen",
+    "prost",
+], optional = true }
+tokio = { workspace = true, features = ["macros"], optional = true }
 
 [build-dependencies]
+pbjson-build = { version = "0.7" }
 tonic-build = { version = "0.12", features = [
     "prost",
 ], default-features = false }
-pbjson-build = "0.7"

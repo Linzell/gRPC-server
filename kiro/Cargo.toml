@@ -1,0 +1,24 @@
+[package]
+name = "kiro"
+description = "A client for the Kiro API"
+version = "0.0.1"
+authors = ["Charlie Cohen <linzellart@gmail.com>"]
+license = "GNU AGPLv3"
+edition = "2021"
+publish = false
+
+[features]
+default = ["cli", "tracing"]
+cli = ["clap"]
+tracing = ["dep:tracing"]
+postgres = ["dep:diesel", "dep:diesel_migrations"]
+surrealdb = []
+
+[dependencies]
+lazy_static = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+
+clap = { version = "4.5", features = ["derive"], optional = true }
+diesel = { workspace = true, features = ["postgres_backend"], optional = true }
+diesel_migrations = { version = "2.2", optional = true }
+tracing = { workspace = true, optional = true }
