@@ -67,7 +67,7 @@ pub fn init_tracer(conf: &Arc<Configuration>) {
             opentelemetry_sdk::Resource::new(vec![
                 opentelemetry::KeyValue::new(
                     "service.name",
-                    format!("digitalkin/api-client-{}", get_env_or("ENVIRONMENT", "PRD")),
+                    format!("kiro-{}", get_env_or("ENVIRONMENT", "PRD")),
                 ),
                 opentelemetry::KeyValue::new("service.version", version!("v")),
                 opentelemetry::KeyValue::new("host.os", std::env::consts::OS),
