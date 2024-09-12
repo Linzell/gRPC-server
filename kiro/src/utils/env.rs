@@ -36,22 +36,22 @@ pub fn get_env_or(key: &str, default: &str) -> String {
     }
 }
 
-/// # Get env unsafe
-///
-/// The `get_env_unsafe` method returns the value of an environment variable.
-///
-/// **<!> Note: The method panics if the variable does not exist.**
-///
-/// ```rust
-/// let value = get_env_unsafe("KEY");
-///
-/// println!("🔑 Value: {:?}", value);
-/// ```
-pub fn get_env_unsafe(key: &str) -> String {
-    let envv = get_envv();
-    if envv.contains_key(key) {
-        envv.get(key).unwrap().clone()
-    } else {
-        panic!("Enviroment variable {0} is not set", key)
-    }
-}
+// /// # Get env unsafe
+// ///
+// /// The `get_env_unsafe` method returns the value of an environment variable.
+// ///
+// /// **<!> Note: The method panics if the variable does not exist.**
+// ///
+// /// ```rust
+// /// let value = get_env_unsafe("KEY");
+// ///
+// /// println!("🔑 Value: {:?}", value);
+// /// ```
+// pub fn get_env_unsafe(key: &str) -> String {
+//     let envv = get_envv();
+//     if envv.contains_key(key) {
+//         envv.get(key).unwrap().clone()
+//     } else {
+//         panic!("Enviroment variable {0} is not set", key)
+//     }
+// }
