@@ -4,11 +4,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = Path::new("src");
     let proto_dir = Path::new("SRC-Proto/proto");
 
-    std::fs::create_dir_all(out_dir.join("auth/v1")).unwrap();
-    std::fs::create_dir_all(out_dir.join("client/v1")).unwrap();
-    std::fs::create_dir_all(out_dir.join("common/v1")).unwrap();
-    std::fs::create_dir_all(out_dir.join("group/v1")).unwrap();
-    std::fs::create_dir_all(out_dir.join("project/v1")).unwrap();
+    std::fs::create_dir_all(out_dir.join("auth")).unwrap();
+    std::fs::create_dir_all(out_dir.join("client")).unwrap();
+    std::fs::create_dir_all(out_dir.join("common")).unwrap();
+    std::fs::create_dir_all(out_dir.join("group")).unwrap();
+    std::fs::create_dir_all(out_dir.join("project")).unwrap();
 
     #[cfg(feature = "json")]
     let well_known_types_path = "::pbjson_types";
@@ -17,9 +17,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let well_known_types_path = "::prost_types";
 
     tonic_build::configure()
-        .out_dir(out_dir.join("common/v1"))
+        .out_dir(out_dir.join("common"))
         .protoc_arg("--experimental_allow_proto3_optional")
-        .file_descriptor_set_path(out_dir.join("common/v1").join("proto_descriptor.bin"))
+        .file_descriptor_set_path(out_dir.join("common").join("proto_descriptor.bin"))
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
         .compile(
@@ -33,19 +33,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "json")]
     {
-        let descriptor_set = std::fs::read(out_dir.join("common/v1").join("proto_descriptor.bin"))?;
+        let descriptor_set = std::fs::read(out_dir.join("common").join("proto_descriptor.bin"))?;
         pbjson_build::Builder::new()
             .register_descriptors(&descriptor_set)?
             .ignore_unknown_fields()
-            .out_dir(out_dir.join("common/v1"))
+            .out_dir(out_dir.join("common"))
             .build(&[".common"])?;
     }
 
     #[allow(unused_mut)]
     let mut builder = tonic_build::configure()
-        .out_dir(out_dir.join("auth/v1"))
+        .out_dir(out_dir.join("auth"))
         .protoc_arg("--experimental_allow_proto3_optional")
-        .file_descriptor_set_path(out_dir.join("auth/v1").join("proto_descriptor.bin"))
+        .file_descriptor_set_path(out_dir.join("auth").join("proto_descriptor.bin"))
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
         .extern_path(".common", "crate::common");
@@ -73,20 +73,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "json")]
     {
-        let descriptor_set = std::fs::read(out_dir.join("auth/v1").join("proto_descriptor.bin"))?;
+        let descriptor_set = std::fs::read(out_dir.join("auth").join("proto_descriptor.bin"))?;
         pbjson_build::Builder::new()
             .register_descriptors(&descriptor_set)?
             .ignore_unknown_fields()
-            .out_dir(out_dir.join("auth/v1"))
+            .out_dir(out_dir.join("auth"))
             .extern_path(".common", "crate::common")
             .build(&[".auth"])?;
     }
 
     #[allow(unused_mut)]
     let mut builder = tonic_build::configure()
-        .out_dir(out_dir.join("client/v1"))
+        .out_dir(out_dir.join("client"))
         .protoc_arg("--experimental_allow_proto3_optional")
-        .file_descriptor_set_path(out_dir.join("client/v1").join("proto_descriptor.bin"))
+        .file_descriptor_set_path(out_dir.join("client").join("proto_descriptor.bin"))
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
         .extern_path(".common", "crate::common");
@@ -134,20 +134,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "json")]
     {
-        let descriptor_set = std::fs::read(out_dir.join("client/v1").join("proto_descriptor.bin"))?;
+        let descriptor_set = std::fs::read(out_dir.join("client").join("proto_descriptor.bin"))?;
         pbjson_build::Builder::new()
             .register_descriptors(&descriptor_set)?
             .ignore_unknown_fields()
-            .out_dir(out_dir.join("client/v1"))
+            .out_dir(out_dir.join("client"))
             .extern_path(".common", "crate::common")
             .build(&[".client"])?;
     }
 
     #[allow(unused_mut)]
     let mut builder = tonic_build::configure()
-        .out_dir(out_dir.join("group/v1"))
+        .out_dir(out_dir.join("group"))
         .protoc_arg("--experimental_allow_proto3_optional")
-        .file_descriptor_set_path(out_dir.join("group/v1").join("proto_descriptor.bin"))
+        .file_descriptor_set_path(out_dir.join("group").join("proto_descriptor.bin"))
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
         .extern_path(".common", "crate::common");
@@ -180,11 +180,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "json")]
     {
-        let descriptor_set = std::fs::read(out_dir.join("group/v1").join("proto_descriptor.bin"))?;
+        let descriptor_set = std::fs::read(out_dir.join("group").join("proto_descriptor.bin"))?;
         pbjson_build::Builder::new()
             .register_descriptors(&descriptor_set)?
             .ignore_unknown_fields()
-            .out_dir(out_dir.join("group/v1"))
+            .out_dir(out_dir.join("group"))
             .extern_path(".common", "crate::common")
             .build(&[".group"])?;
     }

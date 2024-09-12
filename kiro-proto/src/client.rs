@@ -1,7 +1,7 @@
 pub mod v1 {
-    include!("./client/v1/client.v1.rs");
+    include!("./client/client.v1.rs");
     #[cfg(feature = "json")]
-    include!("./client/v1/client.v1.serde.rs");
+    include!("./client/client.v1.serde.rs");
 }
 
 // #[cfg(feature = "surrealdb")]

@@ -56,7 +56,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let conf = config::get();
 
     #[cfg(feature = "tracing")]
-    utils::telemetry::init_tracer(&conf);
+    utils::telemetry::init_tracer(&conf)?;
+
+    // match &cli.command {
+    //     Some(Commands::Configfile {}) => cmd::configfile::run(),
+    //     Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
+    //     None => cmd::root::run().await?,
+    // }
 
     Ok(())
 }

@@ -21,6 +21,15 @@ pub enum Error {
 
     #[error(transparent)]
     Configuration(#[from] config::ConfigError),
+
+    #[error(transparent)]
+    TraceError(#[from] opentelemetry::trace::TraceError),
+
+    #[error(transparent)]
+    MetricsError(#[from] opentelemetry::metrics::MetricsError),
+
+    #[error(transparent)]
+    TryInitError(#[from] tracing_subscriber::util::TryInitError),
 }
 
 /// Convert Error to tonic::Status
@@ -35,6 +44,9 @@ impl From<Error> for tonic::Status {
             Error::IO(e) => tonic::Status::internal(e.to_string()),
             Error::TomlDeError(e) => tonic::Status::internal(e.to_string()),
             Error::Configuration(e) => tonic::Status::internal(e.to_string()),
+            Error::TraceError(e) => tonic::Status::internal(e.to_string()),
+            Error::MetricsError(e) => tonic::Status::internal(e.to_string()),
+            Error::TryInitError(e) => tonic::Status::internal(e.to_string()),
         }
     }
 }
