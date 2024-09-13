@@ -23,15 +23,11 @@ services:
       - start
       - --strict
       - --auth
-      - --user ${SURREAL_USER:-root}
-      - --pass ${SURREAL_PASS:-root}
-      - --log ${SURREAL_LOG_LEVEL:-info}
+      - --user=${SURREAL_USER:-root}
+      - --pass=${SURREAL_PASS:-root}
+      - --log=${SURREAL_LOG_LEVEL:-info}
       - file:/data/database.db
       - --allow-scripting
-    environment:
-      USER: ${SURREAL_USER:-root}
-      PASS: ${SURREAL_PASS:-root}
-      ADDR: ${SURREAL_DB_HOST:-0.0.0.0/0}
     volumes:
       - ./:/kiro/surrealdb/data:rw
     networks:

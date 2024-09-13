@@ -7,11 +7,15 @@ use crate::config;
 /// - `AnyhowError` - anyhow::Error
 /// - `IO` - std::io::Error
 /// - `TomlDeError` - toml::de::Error
+/// - `Configuration` - config::ConfigError
+/// - `TraceError` - opentelemetry::trace::TraceError
+/// - `MetricsError` - opentelemetry::metrics::MetricsError
+/// - `TryInitError` - tracing_subscriber::util::TryInitError
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum Error {
-    #[error(transparent)]
-    AnyhowError(#[from] anyhow::Error),
+    #[error("{0}")]
+    AnyhowError(String),
 
     #[error(transparent)]
     IO(#[from] std::io::Error),
@@ -30,6 +34,12 @@ pub enum Error {
 
     #[error(transparent)]
     TryInitError(#[from] tracing_subscriber::util::TryInitError),
+}
+
+impl From<anyhow::Error> for Error {
+    fn from(err: anyhow::Error) -> Self {
+        Error::AnyhowError(err.to_string())
+    }
 }
 
 /// Convert Error to tonic::Status

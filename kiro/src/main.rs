@@ -18,11 +18,11 @@ use std::path::Path;
 #[cfg(feature = "cli")]
 use clap::{Parser, Subcommand};
 
+#[cfg(feature = "cli")]
+mod cmd;
 mod config;
 mod prelude;
 mod utils;
-// #[cfg(feature = "cli")]
-mod cmd;
 
 #[cfg(feature = "cli")]
 #[derive(Parser)]

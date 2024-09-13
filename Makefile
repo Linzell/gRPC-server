@@ -17,10 +17,10 @@ version:
 api: version
 		cd api && make
 
-devshell:
+dev:
 	nix-shell
 
-docker-devshell:
+docker-dev:
 	docker compose run --rm --service-ports --name kiro kiro
 
 test:
