@@ -77,9 +77,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap(),
         ],
         &[
-        proto_dir.join("kiro").to_str().unwrap(),
-        proto_dir.join("google").to_str().unwrap(),
-    ],
+            proto_dir.join("kiro").to_str().unwrap(),
+            proto_dir.join("google").to_str().unwrap(),
+        ],
     )?;
 
     #[cfg(feature = "json")]
@@ -141,9 +141,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap(),
         ],
         &[
-        proto_dir.join("kiro").to_str().unwrap(),
-        proto_dir.join("google").to_str().unwrap(),
-    ],
+            proto_dir.join("kiro").to_str().unwrap(),
+            proto_dir.join("google").to_str().unwrap(),
+        ],
     )?;
 
     #[cfg(feature = "json")]
@@ -190,9 +190,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap(),
         ],
         &[
-        proto_dir.join("kiro").to_str().unwrap(),
-        proto_dir.join("google").to_str().unwrap(),
-    ],
+            proto_dir.join("kiro").to_str().unwrap(),
+            proto_dir.join("google").to_str().unwrap(),
+        ],
     )?;
 
     #[cfg(feature = "json")]

@@ -120,3 +120,21 @@ pub fn init_tracer(conf: &Arc<Configuration>) -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::runtime::Runtime;
+
+    #[test]
+    fn test_init_tracer() {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let conf = Arc::new(Configuration::default());
+            init_tracer(&conf).unwrap();
+        });
+
+        opentelemetry::global::shutdown_tracer_provider();
+        opentelemetry::global::shutdown_meter_provider();
+    }
+}

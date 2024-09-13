@@ -60,3 +60,62 @@ impl From<Error> for tonic::Status {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_anyhow() {
+        let err = Error::AnyhowError("anyhow error".to_string());
+        let status = tonic::Status::internal("anyhow error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_io() {
+        let err = Error::IO(std::io::Error::new(std::io::ErrorKind::Other, "io error"));
+        let status = tonic::Status::internal("io error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    // #[test]
+    // fn test_error_toml_de() {
+    //     let err = Error::TomlDeError(toml::de::Error::from("toml error"));
+    //     let status = tonic::Status::internal("toml error");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
+
+    #[test]
+    fn test_error_configuration() {
+        let err = Error::Configuration(config::ConfigError::new("config error".to_string()));
+        let status = tonic::Status::internal("Configuration error: config error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_trace() {
+        let err = Error::TraceError(opentelemetry::trace::TraceError::Other(
+            "trace error".into(),
+        ));
+        let status = tonic::Status::internal("trace error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_metrics() {
+        let err = Error::MetricsError(opentelemetry::metrics::MetricsError::Other(
+            "metrics error".into(),
+        ));
+        let status = tonic::Status::internal("Metrics error: metrics error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    // #[test]
+    // fn test_error_try_init() {
+    //     let err = Error::TryInitError(tracing_subscriber::util::TryInitError { _priv: () });
+    //     let status =
+    //         tonic::Status::internal("an error occurred when initializing the global subscriber");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
+}

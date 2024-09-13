@@ -55,3 +55,32 @@ pub fn get_env_or(key: &str, default: &str) -> String {
 //         panic!("Enviroment variable {0} is not set", key)
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_env_or() {
+        let key = "KEY";
+        let value = "VALUE";
+        let default = "DEFAULT";
+
+        env::set_var(key, value);
+
+        assert_eq!(get_env_or(key, default), value);
+        assert_eq!(get_env_or("NOT_SET", default), default);
+    }
+
+    #[test]
+    fn test_get_env_or_fail() {
+        let key = "NONEXISTENT_KEY";
+        let default = "DEFAULT";
+
+        // Remove the key if it exists (just to be sure)
+        env::remove_var(key);
+
+        assert_eq!(get_env_or(key, default), default);
+        assert_ne!(get_env_or(key, default), "SOME_OTHER_VALUE");
+    }
+}
