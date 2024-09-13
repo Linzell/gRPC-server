@@ -18,6 +18,7 @@ api: version
 		cd api && make
 
 dev:
+	git submodule update --init --recursive
 	nix-shell
 
 docker-dev:
