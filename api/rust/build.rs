@@ -1,8 +1,13 @@
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let out_dir = Path::new("src");
-    let proto_dir = Path::new("SRC-Proto/proto");
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let out_dir = Path::new(&out_dir);
+
+    let proto_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let proto_dir = Path::new(&proto_dir);
+    let proto_dir = proto_dir.join("proto");
+    let cs_dir = proto_dir.join("kiro");
 
     std::fs::create_dir_all(out_dir.join("auth")).unwrap();
     std::fs::create_dir_all(out_dir.join("client")).unwrap();
@@ -23,12 +28,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .compile_well_known_types(true)
         .extern_path(".google.protobuf", well_known_types_path)
         .compile(
-            &[proto_dir
+            &[cs_dir
                 .join("common/v1")
                 .join("common.proto")
                 .to_str()
                 .unwrap()],
-            &[proto_dir.to_str().unwrap()],
+            &[
+                proto_dir.join("kiro").to_str().unwrap(),
+                proto_dir.join("google").to_str().unwrap(),
+            ],
         )?;
 
     #[cfg(feature = "json")]
@@ -57,18 +65,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     builder.compile(
         &[
-            proto_dir
+            cs_dir
                 .join("auth/v1")
                 .join("session.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("auth/v1")
                 .join("auth_service.proto")
                 .to_str()
                 .unwrap(),
         ],
-        &[proto_dir.to_str().unwrap()],
+        &[
+        proto_dir.join("kiro").to_str().unwrap(),
+        proto_dir.join("google").to_str().unwrap(),
+    ],
     )?;
 
     #[cfg(feature = "json")]
@@ -98,38 +109,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     builder.compile(
         &[
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("notifications.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("privacy.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("security.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("settings.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("user.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("client/v1")
                 .join("client_service.proto")
                 .to_str()
                 .unwrap(),
         ],
-        &[proto_dir.to_str().unwrap()],
+        &[
+        proto_dir.join("kiro").to_str().unwrap(),
+        proto_dir.join("google").to_str().unwrap(),
+    ],
     )?;
 
     #[cfg(feature = "json")]
@@ -159,23 +173,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     builder.compile(
         &[
-            proto_dir
+            cs_dir
                 .join("group/v1")
                 .join("member.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("group/v1")
                 .join("group.proto")
                 .to_str()
                 .unwrap(),
-            proto_dir
+            cs_dir
                 .join("group/v1")
                 .join("group_service.proto")
                 .to_str()
                 .unwrap(),
         ],
-        &[proto_dir.to_str().unwrap()],
+        &[
+        proto_dir.join("kiro").to_str().unwrap(),
+        proto_dir.join("google").to_str().unwrap(),
+    ],
     )?;
 
     #[cfg(feature = "json")]

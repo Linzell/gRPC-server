@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["kiro", "kiro-proto"]
+members = ["kiro", "api/rust"]
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
 
 [profile.dev.package."*"]
 opt-level = 3
@@ -8,7 +13,7 @@ opt-level = 3
 [workspace.dependencies]
 # Local dependencies
 kiro = { path = "./kiro" }
-kiro_proto = { path = "./kiro-proto" }
+api = { path = "./api/rust" }
 
 # Global dependencies
 axum = "0.7.5"
@@ -26,8 +31,3 @@ tower-http = "0.5.2"
 tracing = "0.1.40"
 tracing-core = "0.1.31"
 tracing-subscriber = "0.3.18"
-
-[profile.release]
-opt-level = 'z'
-lto = true
-codegen-units = 1

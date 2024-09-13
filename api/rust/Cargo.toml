@@ -1,8 +1,9 @@
 [package]
-name = "kiro_proto"
+name = "api"
 description = "Protobuf / API proto definitions"
 version = "0.0.1"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
+homepage = "https://github.com/Linzell/API-Client"
 license = "GNU AGPLv3"
 edition = "2021"
 publish = false

@@ -1,0 +1,9 @@
+version: "2"
+services:
+  kiro-api-rust:
+    build:
+      context: .
+      dockerfile: Dockerfile-rust
+    command: bash -c "cd rust && make all"
+    volumes:
+      - ./:/kiro/api

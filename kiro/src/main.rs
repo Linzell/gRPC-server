@@ -5,23 +5,24 @@
 #[macro_use]
 extern crate lazy_static;
 #[cfg(feature = "postgres")]
+extern crate diesel;
+#[cfg(feature = "postgres")]
 extern crate diesel_migrations;
+#[cfg(feature = "surrealdb")]
+extern crate surrealdb;
 #[cfg(feature = "surrealdb")]
 extern crate surrealdb_migrations;
 
-#[macro_use]
-#[cfg(feature = "postgres")]
-extern crate diesel;
-#[cfg(feature = "surrealdb")]
-extern crate surrealdb;
-
 use std::path::Path;
 
+#[cfg(feature = "cli")]
 use clap::{Parser, Subcommand};
 
 mod config;
 mod prelude;
 mod utils;
+// #[cfg(feature = "cli")]
+mod cmd;
 
 #[cfg(feature = "cli")]
 #[derive(Parser)]
@@ -38,11 +39,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Configfile {},
-
-    CreateApiKey {
-        #[arg(short, long, value_name = "NAME")]
-        name: String,
-    },
+    // CreateApiKey {
+    //     #[arg(short, long, value_name = "NAME")]
+    //     name: String,
+    // },
 }
 
 #[tokio::main]
@@ -53,16 +53,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "cli")]
     config::load(Path::new(&cli.config))?;
 
+    #[cfg(not(feature = "cli"))]
+    config::load(Path::new("config.toml"))?;
+
+    #[cfg(feature = "tracing")]
     let conf = config::get();
 
     #[cfg(feature = "tracing")]
     utils::telemetry::init_tracer(&conf)?;
 
-    // match &cli.command {
-    //     Some(Commands::Configfile {}) => cmd::configfile::run(),
-    //     Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
-    //     None => cmd::root::run().await?,
-    // }
+    #[cfg(feature = "cli")]
+    match &cli.command {
+        Some(Commands::Configfile {}) => cmd::configfile::run(),
+        // Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
+        None => cmd::root::run().await?,
+    }
+    #[cfg(not(feature = "cli"))]
+    cmd::root::run().await?;
 
     Ok(())
 }

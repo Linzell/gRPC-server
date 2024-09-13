@@ -20,10 +20,10 @@ lazy_static! {
 #[serde(default)]
 pub struct Configuration {
     pub logging: Logging,
-    #[cfg(feature = "postgres")]
-    pub postgresql: Postgresql,
-    #[cfg(feature = "surrealdb")]
-    pub surrealdb: Surreal,
+    // #[cfg(feature = "postgres")]
+    // pub postgresql: Postgresql,
+    // #[cfg(feature = "surrealdb")]
+    // pub surrealdb: Surreal,
     // pub redis: Redis,
     pub api: Api,
     pub gateway: Gateway,

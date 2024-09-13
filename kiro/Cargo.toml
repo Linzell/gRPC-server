@@ -3,6 +3,7 @@ name = "kiro"
 description = "A client for the Kiro API"
 version = "0.0.1"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
+homepage = "https://github.com/Linzell/API-Client"
 license = "GNU AGPLv3"
 edition = "2021"
 publish = false
@@ -28,6 +29,7 @@ anyhow = { version = "1.0.86", default-features = false }
 thiserror = { version = "1.0.61", default-features = false }
 
 # Dependencies for the HTTP client
+futures = { version = "0.3" }
 tokio = { workspace = true, features = ["full"] }
 tonic = { workspace = true, features = ["transport"] }
 
@@ -36,6 +38,10 @@ humantime-serde = { version = "1.1" }
 lazy_static = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 toml = { version = "0.8" }
+
+# Dependencies for the signal handling
+signal-hook = { version = "0.3" }
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
 
 # Optional dependencies
 ## Dependencies for CLI
@@ -68,3 +74,6 @@ tracing-subscriber = { workspace = true, features = [
     "fmt",
     "json",
 ], optional = true }
+
+[dev-dependencies]
+dotenv = { workspace = true }
