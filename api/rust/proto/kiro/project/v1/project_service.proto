@@ -1,0 +1,65 @@
+// Copyright 2024 Charlie Cohen <linzellart@gmail.com>
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// List of available options:
+// https://github.com/yoheimuta/protolint/blob/master/_example/config/.protolint.yaml
+
+syntax = "proto3";
+
+package project.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+import "project/v1/project.proto";
+
+// ProjectService
+service ProjectService {
+    // ReadProject
+    rpc ReadProject(ReadProjectRequest) returns (Project) {
+        option (google.api.http) = {
+            get: "/v1/projects/{project_id}"
+        };
+    }
+
+    // ListProjects
+    rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+        option (google.api.http) = {
+            get: "/v1/projects"
+        };
+    }
+
+    // CreateProject
+    rpc CreateProject(CreateProjectRequest) returns (Project) {
+        option (google.api.http) = {
+            post: "/v1/projects/create"
+            body: "*"
+        };
+    }
+
+    // DisableProject
+    rpc DisableProject(DisableProjectRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/projects/{project_id}/disable"
+            body: "*"
+        };
+    }
+
+    // DeleteProject
+    rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/projects/{project_id}/delete"
+        };
+    }
+}

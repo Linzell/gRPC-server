@@ -1,0 +1,104 @@
+// Copyright 2024 Charlie Cohen <linzellart@gmail.com>
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// List of available options:
+// https://github.com/yoheimuta/protolint/blob/master/_example/config/.protolint.yaml
+
+syntax = "proto3";
+
+package client.v1;
+
+import "google/api/field_behavior.proto";
+
+import "client/v1/settings.proto";
+
+import "common/v1/common.proto";
+
+// User
+//
+// User represents a user in the system.
+//
+// Fields:
+//
+// - email: The email address of the user.
+// - avatar: The URL of the user's avatar.
+// - settings: The user's settings.
+// - is_admin: Whether the user is an admin.
+message User {
+    // email: The email address of the user.
+    string email = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // avatar: The URL of the user's avatar.
+    optional string avatar = 2;
+    // settings: The user's settings.
+    Settings settings = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // is_admin: Whether the user is an admin.
+    bool is_admin = 4 [(google.api.field_behavior) = INPUT_ONLY];
+}
+
+// UpdateEmailRequest
+//
+// UpdateEmailRequest represents a request to update the user's email.
+//
+// Fields:
+//
+// - email: The new email address.
+// - temp_token: The temporary token.
+message UpdateEmailRequest {
+    // email: The new email address.
+    string email = 1 [(google.api.field_behavior) = REQUIRED];
+    // temp_token: The temporary token.
+    string temp_token = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// UpdatePasswordRequest
+//
+// UpdatePasswordRequest represents a request to update the user's password.
+//
+// Fields:
+//
+// - password: The new password.
+// - old_password: The old password.
+// - temp_token: The temporary token.
+message UpdatePasswordRequest {
+    // password: The new password.
+    string password = 1 [(google.api.field_behavior) = REQUIRED];
+    // old_password: The old password.
+    string old_password = 2 [(google.api.field_behavior) = REQUIRED];
+    // temp_token: The temporary token.
+    string temp_token = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// UploadAvatarRequest
+//
+// UploadAvatarRequest represents a request to upload the user's avatar.
+//
+// Fields:
+//
+// - file: The file to upload.
+message UploadAvatarRequest {
+    // file: The file to upload.
+    common.v1.File file = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// UploadAvatarResponse
+//
+// UploadAvatarResponse represents a response to uploading the user's avatar.
+//
+// Returns:
+//
+// - url: The URL of the uploaded avatar.
+message UploadAvatarResponse {
+    // url: The URL of the uploaded avatar.
+    string url = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

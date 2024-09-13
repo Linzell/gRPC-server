@@ -1,0 +1,112 @@
+// Copyright 2024 Charlie Cohen <linzellart@gmail.com>
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// List of available options:
+// https://github.com/yoheimuta/protolint/blob/master/_example/config/.protolint.yaml
+
+syntax = "proto3";
+
+package client.v1;
+
+import "client/v1/notifications.proto";
+import "client/v1/privacy.proto";
+import "client/v1/security.proto";
+
+import "google/api/field_behavior.proto";
+
+// Language
+//
+// Enum representing the user's language.
+enum Language {
+    // LANGUAGE_ENGLISH: English
+    LANGUAGE_ENGLISH = 0;
+    // LANGUAGE_SPANISH: Spanish
+    LANGUAGE_SPANISH = 1;
+    // LANGUAGE_FRENCH: French
+    LANGUAGE_FRENCH = 2;
+    // LANGUAGE_GERMAN: German
+    LANGUAGE_GERMAN = 3;
+    // LANGUAGE_ITALIAN: Italian
+    LANGUAGE_ITALIAN = 4;
+    // LANGUAGE_JAPANESE: Japanese
+    LANGUAGE_JAPANESE = 5;
+    // LANGUAGE_KOREAN: Korean
+    LANGUAGE_KOREAN = 6;
+    // LANGUAGE_CHINESE: Chinese
+    LANGUAGE_CHINESE = 7;
+    // LANGUAGE_RUSSIAN: Russian
+    LANGUAGE_RUSSIAN = 8;
+    // LANGUAGE_ARABIC: Arabic
+    LANGUAGE_ARABIC = 9;
+}
+
+// Theme
+//
+// Enum representing the user's theme.
+enum Theme {
+    // THEME_LIGHT: Light theme
+    THEME_LIGHT = 0;
+    // THEME_DARK: Dark theme
+    THEME_DARK = 1;
+    // THEME_SYSTEM: System theme
+    THEME_SYSTEM = 2;
+}
+
+// Settings
+//
+// Settings represents the user's settings.
+//
+// Fields:
+//
+// - language: The user's language.
+// - theme: The user's theme.
+// - notifications: The user's notification settings.
+// - privacy: The user's privacy settings.
+// - security: The user's security settings.
+message Settings {
+    // language: The user's language.
+    optional Language language = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    // theme: The user's theme.
+    optional Theme theme = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    // notifications: The user's notification settings.
+    Notifications notifications = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // privacy: The user's privacy settings.
+    Privacy privacy = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // security: The user's security settings.
+    Security security = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// UpdateLanguageRequest
+//
+// UpdateLanguageRequest represents a request to update the user's language.
+//
+// Fields:
+//
+// - language: The user's language.
+message UpdateLanguageRequest {
+    // language: The user's language.
+    Language language = 1  [(google.api.field_behavior) = REQUIRED];
+}
+
+// UpdateThemeRequest
+//
+// UpdateThemeRequest represents a request to update the user's theme.
+//
+// Fields:
+//
+// - theme: The user's theme.
+message UpdateThemeRequest {
+    // theme: The user's theme.
+    Theme theme = 1  [(google.api.field_behavior) = REQUIRED];
+}

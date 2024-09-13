@@ -1,0 +1,107 @@
+// Copyright 2024 Charlie Cohen <linzellart@gmail.com>
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// List of available options:
+// https://github.com/yoheimuta/protolint/blob/master/_example/config/.protolint.yaml
+
+syntax = "proto3";
+
+package group.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+import "group/v1/group.proto";
+import "group/v1/member.proto";
+
+// GroupService
+service GroupService {
+    // ReadGroup
+    rpc ReadGroup(ReadGroupRequest) returns (Group) {
+        option (google.api.http) = {
+            get: "/v1/groups/{group_id}"
+        };
+    }
+
+    // CreateGroup
+    rpc CreateGroup(CreateGroupRequest) returns (Group) {
+        option (google.api.http) = {
+            post: "/v1/groups/create"
+            body: "*"
+        };
+    }
+
+    // DisableGroup
+    rpc DisableGroup(DisableGroupRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/disable"
+            body: "*"
+        };
+    }
+
+    // DeleteGroup
+    rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/groups/{group_id}/delete"
+        };
+    }
+
+    // UpdateName
+    rpc UpdateName(UpdateNameRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/update_name"
+            body: "*"
+        };
+    }
+
+    // UpdateDescription
+    rpc UpdateDescription(UpdateDescriptionRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/update_description"
+            body: "*"
+        };
+    }
+
+    // UpdateLogo
+    rpc UpdateLogo(UpdateLogoRequest) returns (UpdateLogoResponse) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/update_logo"
+            body: "*"
+        };
+    }
+
+    // AddMember
+    rpc AddMember(AddMemberRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/add_member/{user_id}"
+            body: "*"
+        };
+    }
+
+    // RemoveMember
+    rpc RemoveMember(RemoveMemberRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/remove_member/{user_id}"
+            body: "*"
+        };
+    }
+
+    // UpdateMemberRole
+    rpc UpdateMemberRole(UpdateMemberRoleRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/groups/{group_id}/update_member_role/{user_id}"
+            body: "*"
+        };
+    }
+}

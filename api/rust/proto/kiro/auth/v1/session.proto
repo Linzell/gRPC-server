@@ -1,0 +1,71 @@
+// Copyright 2024 Charlie Cohen <linzellart@gmail.com>
+//
+// Licensed under the GNU General Public License, Version 3.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// List of available options:
+// https://github.com/yoheimuta/protolint/blob/master/_example/config/.protolint.yaml
+
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+// Session
+//
+// Session object
+//
+// Fields:
+//
+// - token: string
+// - expire_date: string
+message Session {
+    // token: string
+    string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // expire_date: string
+    google.protobuf.Timestamp expire_date = 2 [
+        (google.api.field_behavior) = IMMUTABLE,
+        (google.api.field_behavior) = OUTPUT_ONLY
+    ];
+}
+
+// LoginRequest
+//
+// Request for login
+//
+// Fields:
+//
+// - email: string
+// - password: string
+message LoginRequest {
+    // email: string
+    string email = 1 [(google.api.field_behavior) = REQUIRED];
+    // password: string
+    string password = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// RegisterRequest
+//
+// Request for register
+//
+// Fields:
+//
+// - email: string
+// - password: string
+message RegisterRequest {
+    // email: string
+    string email = 1 [(google.api.field_behavior) = REQUIRED];
+    // password: string
+    string password = 2 [(google.api.field_behavior) = REQUIRED];
+}
