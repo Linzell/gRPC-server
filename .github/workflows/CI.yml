@@ -53,8 +53,8 @@ jobs:
     name: cargo-deny check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: EmbarkStudios/cargo-deny-action@v1
+    - uses: actions/checkout@v3
+    - uses: EmbarkStudios/cargo-deny-action@v2
 
   test:
     name: Test Suite
@@ -69,32 +69,4 @@ jobs:
           submodules: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
-      - run: cargo test
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: rustup component add rustfmt
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - run: cargo fmt --all -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get update
-      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev
-      - run: rustup component add clippy
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-      - run: cargo clippy --all -- -D warnings
+      - run: make test

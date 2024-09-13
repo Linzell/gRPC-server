@@ -1,26 +1,41 @@
-version: "3.9"
-name: grpc-api-client
 services:
+  # ------------------- kiro ---------------------------
+  kiro:
+    build:
+      context: .
+      dockerfile: Dockerfile-devel
+    volumes:
+      - ./:/kiro
+    depends_on:
+      - surrealdb
+      - jaeger
+    environment:
+      - SURREAL_DB_HOST=surrealdb
+      - JAEGER_AGENT_HOST=jaeger
+    ports:
+      - "8080:8080"
   # ------------------- surrealdb ----------------------
-  storage:
-    container_name: surrealdb
+  surrealdb:
     image: surrealdb/surrealdb:latest
     user: ${SURREAL_USER:-root}
     restart: unless-stopped
-    command: start --strict --auth --user ${SURREAL_USER:-root} --pass ${SURREAL_PASS:-root} --log ${SURREAL_LOG_LEVEL:-info} file:/data/database.db --allow-scripting
-    environment:
-      USER: ${SURREAL_USER:-root}
-      PASS: ${SURREAL_PASS:-root}
-      ADDR: ${SURREAL_DB_HOST:-0.0.0.0/0}
+    command:
+      - start
+      - --strict
+      - --auth
+      - --user=${SURREAL_USER:-root}
+      - --pass=${SURREAL_PASS:-root}
+      - --log=${SURREAL_LOG_LEVEL:-info}
+      - file:/data/database.db
+      - --allow-scripting
     volumes:
-      - surrealdb_data:/data:rw
+      - ./:/kiro/surrealdb/data:rw
     networks:
       - default
     ports:
       - ${SURREAL_PORT}:8000
   # ------------------- Jaeger ----------------------
   jaeger:
-    container_name: jaeger
     image: jaegertracing/all-in-one:latest
     environment:
       - COLLECTOR_OTLP_ENABLED=true
@@ -34,6 +49,3 @@ services:
 networks:
   default:
     driver: bridge
-# ------------------- Storage ----------------------
-volumes:
-  surrealdb_data:

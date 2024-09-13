@@ -1,3 +1,3 @@
-[submodule "SRC-Proto"]
-	path = SRC-Proto
-	url = git@github.com:Linzell/SRC-Proto.git
+[submodule "api/SRC-Proto"]
+	path = api/SRC-Proto
+	url = https://github.com/Linzell/SRC-Proto.git

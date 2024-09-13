@@ -1,12 +1,33 @@
-[package]
-name = "api-client"
-authors = ["Charlie Cohen <linzellart@gmail.com>"]
-version = "0.0.1"
-edition = "2021"
-
 [workspace]
+resolver = "2"
+members = ["kiro", "api/rust"]
 
-[dependencies]
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
 
-[build-dependencies]
-tonic-build = "0.12.1"
+[profile.dev.package."*"]
+opt-level = 3
+
+[workspace.dependencies]
+# Local dependencies
+kiro = { path = "./kiro" }
+api = { path = "./api/rust" }
+
+# Global dependencies
+axum = "0.7.5"
+diesel = "2.2"
+dotenv = "0.15.0"
+http = "1.1.0"
+lazy_static = "1.5"
+serde = "1.0.130"
+surrealdb = "1.4.2"
+tokio = "1.38"
+tonic = { version = "0.12", default-features = false }
+tonic-reflection = "0.12"
+tonic-web = "0.12"
+tower-http = "0.5.2"
+tracing = "0.1.40"
+tracing-core = "0.1.31"
+tracing-subscriber = "0.3.18"
