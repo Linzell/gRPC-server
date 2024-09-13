@@ -67,6 +67,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
