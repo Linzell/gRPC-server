@@ -135,6 +135,5 @@ mod tests {
         });
 
         opentelemetry::global::shutdown_tracer_provider();
-        opentelemetry::global::shutdown_meter_provider();
     }
 }
