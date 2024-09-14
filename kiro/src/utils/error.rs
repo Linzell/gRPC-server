@@ -7,6 +7,7 @@ use crate::config;
 /// - `AnyhowError` - anyhow::Error
 /// - `IO` - std::io::Error
 /// - `TomlDeError` - toml::de::Error
+/// - `TomlSerError` - toml::ser::Error
 /// - `Configuration` - config::ConfigError
 /// - `TraceError` - opentelemetry::trace::TraceError
 /// - `MetricsError` - opentelemetry::metrics::MetricsError
@@ -22,6 +23,9 @@ pub enum Error {
 
     #[error(transparent)]
     TomlDeError(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    TomlSerError(#[from] toml::ser::Error),
 
     #[error(transparent)]
     Configuration(#[from] config::ConfigError),
@@ -53,10 +57,77 @@ impl From<Error> for tonic::Status {
             Error::AnyhowError(e) => tonic::Status::internal(e.to_string()),
             Error::IO(e) => tonic::Status::internal(e.to_string()),
             Error::TomlDeError(e) => tonic::Status::internal(e.to_string()),
+            Error::TomlSerError(e) => tonic::Status::internal(e.to_string()),
             Error::Configuration(e) => tonic::Status::internal(e.to_string()),
             Error::TraceError(e) => tonic::Status::internal(e.to_string()),
             Error::MetricsError(e) => tonic::Status::internal(e.to_string()),
             Error::TryInitError(e) => tonic::Status::internal(e.to_string()),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_anyhow() {
+        let err = Error::AnyhowError("anyhow error".to_string());
+        let status = tonic::Status::internal("anyhow error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_io() {
+        let err = Error::IO(std::io::Error::new(std::io::ErrorKind::Other, "io error"));
+        let status = tonic::Status::internal("io error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    // #[test]
+    // fn test_error_toml_de() {
+    //     let err = Error::TomlDeError(toml::de::Error::from("toml error"));
+    //     let status = tonic::Status::internal("toml error");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
+
+    // #[test]
+    // fn test_error_toml_ser() {
+    //     let err = Error::TomlSerError(toml::ser::Error::custom("toml ser error"));
+    //     let status = tonic::Status::internal("toml ser error");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
+
+    #[test]
+    fn test_error_configuration() {
+        let err = Error::Configuration(config::ConfigError::new("config error".to_string()));
+        let status = tonic::Status::internal("Configuration error: config error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_trace() {
+        let err = Error::TraceError(opentelemetry::trace::TraceError::Other(
+            "trace error".into(),
+        ));
+        let status = tonic::Status::internal("trace error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    #[test]
+    fn test_error_metrics() {
+        let err = Error::MetricsError(opentelemetry::metrics::MetricsError::Other(
+            "metrics error".into(),
+        ));
+        let status = tonic::Status::internal("Metrics error: metrics error");
+        assert_eq!(tonic::Status::from(err).message(), status.message());
+    }
+
+    // #[test]
+    // fn test_error_try_init() {
+    //     let err = Error::TryInitError(tracing_subscriber::util::TryInitError { _priv: () });
+    //     let status =
+    //         tonic::Status::internal("an error occurred when initializing the global subscriber");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
 }

@@ -281,6 +281,16 @@ pub struct BackendInterfaces {
 pub fn load(config_dir: &Path) -> Result<(), Error> {
     let mut content: String = String::new();
 
+    if !config_dir.exists() {
+        fs::create_dir_all(config_dir)?;
+    }
+
+    let config_file = config_dir.join("config.toml");
+    if !config_file.exists() {
+        let default_config = toml::to_string(&Configuration::default())?;
+        fs::write(&config_file, default_config)?;
+    }
+
     let paths = fs::read_dir(config_dir)?;
     for path in paths {
         let path = path.unwrap().path();

@@ -83,22 +83,7 @@ pub fn init_tracer(conf: &Arc<Configuration>) -> Result<(), Error> {
 
     global::set_tracer_provider(tracer_provider.clone());
 
-    tracing::trace!(target: "relay", "Successfully initialized trace provider on tokio runtime");
-
-    let exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint(jaeger_endpoint)
-        .with_metadata(metadata)
-        .with_channel(channel);
-
-    let meter_provider = opentelemetry_otlp::new_pipeline()
-        .metrics(Tokio)
-        .with_exporter(exporter)
-        .build()?;
-
-    global::set_meter_provider(meter_provider);
-
-    tracing::trace!(target: "relay", "Successfully initialized metric provider on tokio runtime");
+    tracing::trace!(target: "relay", "✅ Successfully initialized trace provider on tokio runtime");
 
     let filter = filter::Targets::new()
         .with_target("kiro", Level::from_str(&conf.logging.level).unwrap())
@@ -119,4 +104,21 @@ pub fn init_tracer(conf: &Arc<Configuration>) -> Result<(), Error> {
     tracing::info!("🔍 Tracer initialized");
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::runtime::Runtime;
+
+    #[test]
+    fn test_init_tracer() {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async {
+            let conf = Arc::new(Configuration::default());
+            init_tracer(&conf).unwrap();
+        });
+
+        opentelemetry::global::shutdown_tracer_provider();
+    }
 }

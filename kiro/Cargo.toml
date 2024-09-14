@@ -54,7 +54,7 @@ surrealdb = { workspace = true, features = ["kv-mem", "jwks"], optional = true }
 surrealdb-migrations = { version = "1.4.1", optional = true }
 
 ## Dependencies for the OpenTelemetry
-opentelemetry = { version = "0.24.0", features = ["metrics"], optional = true }
+opentelemetry = { version = "0.24.0", optional = true }
 opentelemetry_sdk = { version = "0.24.1", features = [
     "rt-tokio",
     "rt-tokio-current-thread",
@@ -62,7 +62,6 @@ opentelemetry_sdk = { version = "0.24.1", features = [
 opentelemetry-otlp = { version = "0.17.0", features = [
     "grpc-tonic",
     "tls-roots",
-    "metrics",
 ], optional = true }
 tracing-opentelemetry = { version = "0.25", optional = true }
 

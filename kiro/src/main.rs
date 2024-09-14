@@ -20,6 +20,7 @@ use clap::{Parser, Subcommand};
 
 #[cfg(feature = "cli")]
 mod cmd;
+
 mod config;
 mod prelude;
 mod utils;
@@ -49,16 +50,13 @@ enum Commands {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "cli")]
     let cli = Cli::parse();
-
     #[cfg(feature = "cli")]
     config::load(Path::new(&cli.config))?;
-
-    #[cfg(not(feature = "cli"))]
+    #[cfg(feature = "cli")]
     config::load(Path::new("config.toml"))?;
 
     #[cfg(feature = "tracing")]
     let conf = config::get();
-
     #[cfg(feature = "tracing")]
     utils::telemetry::init_tracer(&conf)?;
 
@@ -68,8 +66,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
         None => cmd::root::run().await?,
     }
+
     #[cfg(not(feature = "cli"))]
     cmd::root::run().await?;
+
+    opentelemetry::global::shutdown_tracer_provider();
+
+    tracing::info!("Stop tracing... 🛑");
 
     Ok(())
 }
