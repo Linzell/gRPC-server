@@ -328,3 +328,317 @@ pub fn get() -> Arc<Configuration> {
     let conf = CONFIG.lock().unwrap();
     conf.clone()
 }
+
+pub fn save(conf: &Configuration, config_dir: &Path) -> Result<(), Error> {
+    let config_file = config_dir.join("config.toml");
+    let content = toml::to_string_pretty(conf)?;
+    fs::write(&config_file, content)?;
+    Ok(())
+}
+
+#[allow(dead_code)]
+#[derive(Clone)]
+pub struct ConfigField {
+    pub path: String,
+    pub description: String,
+    pub possible_values: String,
+    pub getter: fn(&Configuration) -> String,
+    pub setter: fn(&mut Configuration, &str) -> Result<(), String>,
+}
+
+impl Configuration {
+    pub fn get_interactive_fields() -> Vec<ConfigField> {
+        let mut fields = Vec::new();
+
+        fields.extend(Self::get_logging_fields());
+        // fields.extend(Self::get_postgresql_fields());
+        // fields.extend(Self::get_redis_fields());
+        fields.extend(Self::get_api_fields());
+        fields.extend(Self::get_gateway_fields());
+        // fields.extend(Self::get_network_fields());
+        fields.extend(Self::get_monitoring_fields());
+        // fields.extend(Self::get_integration_fields());
+        // fields.extend(Self::get_codec_fields());
+        fields.extend(Self::get_user_authentication_fields());
+        fields.extend(Self::get_join_server_fields());
+        fields.extend(Self::get_backend_interfaces_fields());
+        // fields.extend(Self::get_roaming_fields());
+        // fields.extend(Self::get_ui_fields());
+
+        fields
+    }
+
+    fn get_logging_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "logging.level".to_string(),
+                description: "Log level".to_string(),
+                possible_values: "TRACE, DEBUG, INFO, WARN, ERROR, OFF".to_string(),
+                getter: |conf| conf.logging.level.clone(),
+                setter: |conf, value| {
+                    let upper_value = value.to_uppercase();
+                    if ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF"].contains(&upper_value.as_str()) {
+                        conf.logging.level = upper_value;
+                        Ok(())
+                    } else {
+                        Err("Invalid log level".to_string())
+                    }
+                },
+            },
+            ConfigField {
+                path: "logging.json".to_string(),
+                description: "Log as JSON".to_string(),
+                possible_values: "true, false".to_string(),
+                getter: |conf| conf.logging.json.to_string(),
+                setter: |conf, value| {
+                    conf.logging.json = value.parse().map_err(|_| "Invalid boolean value".to_string())?;
+                    Ok(())
+                },
+            },
+        ]
+    }
+
+    // fn get_postgresql_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "postgresql.dsn".to_string(),
+    //             description: "PostgreSQL DSN".to_string(),
+    //             possible_values: "postgres://<USERNAME>:<PASSWORD>@<HOSTNAME>/<DATABASE>?sslmode=<SSLMODE>".to_string(),
+    //             getter: |conf| conf.postgresql.dsn.clone(),
+    //             setter: |conf, value| {
+    //                 conf.postgresql.dsn = value;
+    //                 Ok(())
+    //             },
+    //         },
+    //         ConfigField {
+    //             path: "postgresql.max_open_connections".to_string(),
+    //             description: "Max open connections".to_string(),
+    //             possible_values: "Positive integer".to_string(),
+    //             getter: |conf| conf.postgresql.max_open_connections.to_string(),
+    //             setter: |conf, value| {
+    //                 conf.postgresql.max_open_connections = value.parse().map_err(|_| "Invalid integer".to_string())?;
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+
+    // fn get_redis_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "redis.servers".to_string(),
+    //             description: "Redis server addresses".to_string(),
+    //             possible_values: "Comma-separated list of redis://host:port".to_string(),
+    //             getter: |conf| conf.redis.servers.join(", "),
+    //             setter: |conf, value| {
+    //                 conf.redis.servers = value.split(',').map(|s| s.trim().to_string()).collect();
+    //                 Ok(())
+    //             },
+    //         },
+    //         ConfigField {
+    //             path: "redis.cluster".to_string(),
+    //             description: "Redis Cluster".to_string(),
+    //             possible_values: "true, false".to_string(),
+    //             getter: |conf| conf.redis.cluster.to_string(),
+    //             setter: |conf, value| {
+    //                 conf.redis.cluster = value.parse().map_err(|_| "Invalid boolean value".to_string())?;
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+
+    fn get_api_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "api.bind".to_string(),
+                description: "API bind address".to_string(),
+                possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
+                getter: |conf| conf.api.bind.to_string(),
+                setter: |conf, value| {
+                    conf.api.bind = value.parse().map_err(|_| "Invalid socket address".to_string())?;
+                    Ok(())
+                },
+            },
+            ConfigField {
+                path: "api.secret".to_string(),
+                description: "API secret".to_string(),
+                possible_values: "Strong secret string".to_string(),
+                getter: |conf| conf.api.secret.clone(),
+                setter: |conf, value| {
+                    conf.api.secret = value.to_string();
+                    Ok(())
+                },
+            },
+        ]
+    }
+
+    fn get_gateway_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "gateway.ca_cert".to_string(),
+                description: "CA certificate path".to_string(),
+                possible_values: "Path to CA certificate file".to_string(),
+                getter: |conf| conf.gateway.ca_cert.clone(),
+                setter: |conf, value| {
+                    conf.gateway.ca_cert = value.to_string();
+                    Ok(())
+                },
+            },
+            ConfigField {
+                path: "gateway.ca_key".to_string(),
+                description: "CA key path".to_string(),
+                possible_values: "Path to CA key file".to_string(),
+                getter: |conf| conf.gateway.ca_key.clone(),
+                setter: |conf, value| {
+                    conf.gateway.ca_key = value.to_string();
+                    Ok(())
+                },
+            },
+        ]
+    }
+
+    // fn get_network_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "network.net_id".to_string(),
+    //             description: "Network identifier (NetID)".to_string(),
+    //             possible_values: "3 bytes encoded as HEX (e.g. 010203)".to_string(),
+    //             getter: |conf| conf.network.net_id.clone(),
+    //             setter: |conf, value| {
+    //                 if value.len() == 6 && value.chars().all(|c| c.is_digit(16)) {
+    //                     conf.network.net_id = value;
+    //                     Ok(())
+    //                 } else {
+    //                     Err("Invalid NetID format".to_string())
+    //                 }
+    //             },
+    //         },
+    //     ]
+    // }
+
+    fn get_monitoring_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "monitoring.bind".to_string(),
+                description: "Monitoring bind address".to_string(),
+                possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
+                getter: |conf| conf.monitoring.bind.clone(),
+                setter: |conf, value| {
+                    conf.monitoring.bind = value.to_string();
+                    Ok(())
+                },
+            },
+        ]
+    }
+
+    // fn get_integration_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "integration.enabled".to_string(),
+    //             description: "Enabled integrations".to_string(),
+    //             possible_values: "Comma-separated list of integrations".to_string(),
+    //             getter: |conf| conf.integration.enabled.join(", "),
+    //             setter: |conf, value| {
+    //                 conf.integration.enabled = value.split(',').map(|s| s.trim().to_string()).collect();
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+
+    // fn get_codec_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "codec.js.max_execution_time".to_string(),
+    //             description: "JS codec max execution time".to_string(),
+    //             possible_values: "Duration (e.g., 100ms, 5s)".to_string(),
+    //             getter: |conf| conf.codec.js.max_execution_time.clone(),
+    //             setter: |conf, value| {
+    //                 conf.codec.js.max_execution_time = value;
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+
+    fn get_user_authentication_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "user_authentication.enabled".to_string(),
+                description: "Enabled authentication backend".to_string(),
+                possible_values: "internal, openid_connect, oauth2".to_string(),
+                getter: |conf| conf.user_authentication.enabled.clone(),
+                setter: |conf, value| {
+                    if ["internal", "openid_connect", "oauth2"].contains(&value) {
+                        conf.user_authentication.enabled = value.to_string();
+                        Ok(())
+                    } else {
+                        Err("Invalid authentication backend".to_string())
+                    }
+                },
+            },
+        ]
+    }
+
+    fn get_join_server_fields() -> Vec<ConfigField> {
+        vec![
+            // Add fields for join_server configuration if needed
+        ]
+    }
+
+    fn get_backend_interfaces_fields() -> Vec<ConfigField> {
+        vec![
+            ConfigField {
+                path: "backend_interfaces.bind".to_string(),
+                description: "Backend Interfaces bind address".to_string(),
+                possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
+                getter: |conf| conf.backend_interfaces.bind.clone(),
+                setter: |conf, value| {
+                    conf.backend_interfaces.bind = value.to_string();
+                    Ok(())
+                },
+            },
+        ]
+    }
+
+    // fn get_roaming_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "roaming.resolve_net_id_domain_suffix".to_string(),
+    //             description: "Resolve NetID domain suffix".to_string(),
+    //             possible_values: "Domain suffix".to_string(),
+    //             getter: |conf| conf.roaming.resolve_net_id_domain_suffix.clone(),
+    //             setter: |conf, value| {
+    //                 conf.roaming.resolve_net_id_domain_suffix = value;
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+
+    // fn get_ui_fields() -> Vec<ConfigField> {
+    //     vec![
+    //         ConfigField {
+    //             path: "ui.tileserver_url".to_string(),
+    //             description: "Tileserver URL".to_string(),
+    //             possible_values: "URL of the tileserver".to_string(),
+    //             getter: |conf| conf.ui.tileserver_url.clone(),
+    //             setter: |conf, value| {
+    //                 conf.ui.tileserver_url = value;
+    //                 Ok(())
+    //             },
+    //         },
+    //         ConfigField {
+    //             path: "ui.map_attribution".to_string(),
+    //             description: "Map attribution".to_string(),
+    //             possible_values: "Attribution text for the map".to_string(),
+    //             getter: |conf| conf.ui.map_attribution.clone(),
+    //             setter: |conf, value| {
+    //                 conf.ui.map_attribution = value;
+    //                 Ok(())
+    //             },
+    //         },
+    //     ]
+    // }
+}

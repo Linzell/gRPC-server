@@ -92,3 +92,11 @@ To clean the Nix store, run the following command:
 ```bash
 nix-store --gc
 ```
+
+### Add user permissions to the Nix store
+
+To add user permissions to the Nix store, run the following command:
+
+```bash
+sudo chown --recursive "$USER" /nix
+```
