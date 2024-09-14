@@ -83,22 +83,7 @@ pub fn init_tracer(conf: &Arc<Configuration>) -> Result<(), Error> {
 
     global::set_tracer_provider(tracer_provider.clone());
 
-    tracing::trace!(target: "relay", "Successfully initialized trace provider on tokio runtime");
-
-    let exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint(jaeger_endpoint)
-        .with_metadata(metadata)
-        .with_channel(channel);
-
-    let meter_provider = opentelemetry_otlp::new_pipeline()
-        .metrics(Tokio)
-        .with_exporter(exporter)
-        .build()?;
-
-    global::set_meter_provider(meter_provider);
-
-    tracing::trace!(target: "relay", "Successfully initialized metric provider on tokio runtime");
+    tracing::trace!(target: "relay", "✅ Successfully initialized trace provider on tokio runtime");
 
     let filter = filter::Targets::new()
         .with_target("kiro", Level::from_str(&conf.logging.level).unwrap())

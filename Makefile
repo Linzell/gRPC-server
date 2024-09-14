@@ -1,7 +1,13 @@
-.PHONY: dist
+.PHONY: dist api
 
-dist:
+dist: docker-services
 	cd kiro && make dist
+
+help: docker-services
+	cd kiro && make help
+
+config: docker-services
+	cd kiro && make config
 
 version:
 	test -n "$(VERSION)"
@@ -13,6 +19,10 @@ version:
 	git add .
 	git commit -v -m "Bump version to $(VERSION)"
 	git tag -a v$(VERSION) -m "v$(VERSION)"
+
+docker-services:
+	@docker ps -a | grep -q surrealdb || (echo "Starting SurrealDB..." && docker-compose up -d surrealdb)
+	@docker ps -a | grep -q jaeger || (echo "Starting Jaeger..." && docker-compose up -d jaeger)
 
 api: version
 		cd api && make

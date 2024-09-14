@@ -70,5 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(not(feature = "cli"))]
     cmd::root::run().await?;
 
+    opentelemetry::global::shutdown_tracer_provider();
+
+    tracing::info!("Stop tracing... 🛑");
+
     Ok(())
 }

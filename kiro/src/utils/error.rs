@@ -7,6 +7,7 @@ use crate::config;
 /// - `AnyhowError` - anyhow::Error
 /// - `IO` - std::io::Error
 /// - `TomlDeError` - toml::de::Error
+/// - `TomlSerError` - toml::ser::Error
 /// - `Configuration` - config::ConfigError
 /// - `TraceError` - opentelemetry::trace::TraceError
 /// - `MetricsError` - opentelemetry::metrics::MetricsError
@@ -22,6 +23,9 @@ pub enum Error {
 
     #[error(transparent)]
     TomlDeError(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    TomlSerError(#[from] toml::ser::Error),
 
     #[error(transparent)]
     Configuration(#[from] config::ConfigError),
@@ -53,6 +57,7 @@ impl From<Error> for tonic::Status {
             Error::AnyhowError(e) => tonic::Status::internal(e.to_string()),
             Error::IO(e) => tonic::Status::internal(e.to_string()),
             Error::TomlDeError(e) => tonic::Status::internal(e.to_string()),
+            Error::TomlSerError(e) => tonic::Status::internal(e.to_string()),
             Error::Configuration(e) => tonic::Status::internal(e.to_string()),
             Error::TraceError(e) => tonic::Status::internal(e.to_string()),
             Error::MetricsError(e) => tonic::Status::internal(e.to_string()),
@@ -83,6 +88,13 @@ mod tests {
     // fn test_error_toml_de() {
     //     let err = Error::TomlDeError(toml::de::Error::from("toml error"));
     //     let status = tonic::Status::internal("toml error");
+    //     assert_eq!(tonic::Status::from(err).message(), status.message());
+    // }
+
+    // #[test]
+    // fn test_error_toml_ser() {
+    //     let err = Error::TomlSerError(toml::ser::Error::custom("toml ser error"));
+    //     let status = tonic::Status::internal("toml ser error");
     //     assert_eq!(tonic::Status::from(err).message(), status.message());
     // }
 

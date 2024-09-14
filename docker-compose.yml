@@ -28,6 +28,8 @@ services:
       - --log=${SURREAL_LOG_LEVEL:-info}
       - file:/data/database.db
       - --allow-scripting
+    depends_on:
+      - jaeger
     volumes:
       - ./:/kiro/surrealdb/data:rw
     networks:
