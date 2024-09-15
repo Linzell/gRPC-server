@@ -15,8 +15,8 @@ version:
 		exit 1; \
 	fi
 	@$(eval VERSION := $(filter-out $@,$(MAKECMDGOALS)))
-	sed -i 's/^  version.*/  version = "$(VERSION)"/g' ./kiro/Cargo.toml
-	sed -i 's/^  version.*/  version = "$(VERSION)"/g' ./api/rust/Cargo.toml
+	sed -i 's/^version = .*/version = "$(VERSION)"/g' ./kiro/Cargo.toml
+	sed -i 's/^version = .*/version = "$(VERSION)"/g' ./api/rust/Cargo.toml
 
 	cd api && make
 	make test
