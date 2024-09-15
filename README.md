@@ -3,6 +3,7 @@
 This is a gRPC server that can be used to interact with the [Service Proto](https://github.com/Linzell/SRC-Proto).
 
 [![CI](https://github.com/Linzell/API-Client/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Linzell/API-Client/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/Linzell/API-Client/branch/main/graph/badge.svg?token=4TBIXUE2YV)](https://codecov.io/gh/Linzell/API-Client)
 
 ## Running the server locally
 
