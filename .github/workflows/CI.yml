@@ -108,12 +108,15 @@ jobs:
             ${{ runner.os }}-cargo-
       - name: Install grcov
         run: cargo install grcov
+      - name: Clean
+        run: cargo clean
       - name: Build
-        run: cargo build --verbose
+        run: RUSTFLAGS="-Cinstrument-coverage" cargo build --verbose
       - name: Run tests
         run: |
-          export LLVM_PROFILE_FILE="your_project-%p-%m.profraw"
-          cargo test --verbose
+          RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="your_project-%p-%m.profraw" cargo test --verbose
+      - name: List generated files
+        run: find . -name "*.profraw"
       - name: Generate coverage
         run: |
           grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
