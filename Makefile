@@ -10,7 +10,11 @@ config: docker-services
 	cd kiro && make config
 
 version:
-	test -n "$(VERSION)"
+	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
+		echo "Error: VERSION is not set. Please provide a version number."; \
+		exit 1; \
+	fi
+	@$(eval VERSION := $(filter-out $@,$(MAKECMDGOALS)))
 	sed -i 's/^  version.*/  version = "$(VERSION)"/g' ./kiro/Cargo.toml
 	sed -i 's/^  version.*/  version = "$(VERSION)"/g' ./api/rust/Cargo.toml
 
