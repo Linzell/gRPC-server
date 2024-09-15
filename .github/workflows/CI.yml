@@ -27,6 +27,16 @@ jobs:
         with:
           toolchain: nightly
           override: true
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
       - name: Install udeps
@@ -38,15 +48,25 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: sudo apt-get update
       - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - run: cargo check --all --examples --tests
 
   deny-check:
@@ -55,66 +75,92 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: EmbarkStudios/cargo-deny-action@v2
+      with:
+        command: check bans advisories sources
 
   test:
     name: Test Suite
     runs-on: ubuntu-latest
     steps:
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get update
-      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: llvm-tools-preview
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update
+      - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
-      - uses: actions-rs/toolchain@v1
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
         with:
-          toolchain: nightly
-          override: true
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Install grcov
+        run: cargo install grcov
+      - name: Clean
+        run: cargo clean
       - name: Build
-        run: cargo build --verbose
+        run: RUSTFLAGS="-Cinstrument-coverage" cargo build --verbose
       - name: Run tests
-        run: cargo test --verbose
-        env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
-      - name: rust-grcov
-        uses: actions-rs/grcov@v0.1
-      - name: Codecov
+        run: |
+          RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="your_project-%p-%m.profraw" cargo test --verbose
+      - name: List generated files
+        run: find . -name "*.profraw"
+      - name: Generate coverage
+        run: |
+          grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
         with:
-          verbose: true
+          token: ${{ secrets.CODECOV_ORG_TOKEN }}
+          file: lcov.info
           fail_ci_if_error: true
 
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: rustup component add rustfmt
       - uses: actions/checkout@v4
         with:
           submodules: true
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: rustup component add rustfmt
       - run: cargo fmt --all -- --check
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: sudo apt-get update
       - run: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libasound2-dev
       - run: rustup component add clippy
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+      - name: Cache cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
       - run: cargo clippy --all -- -D warnings

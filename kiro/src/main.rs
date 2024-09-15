@@ -17,6 +17,8 @@ use std::path::Path;
 
 #[cfg(feature = "cli")]
 use clap::{Parser, Subcommand};
+#[cfg(feature = "cli")]
+use std::io;
 
 #[cfg(feature = "cli")]
 mod cmd;
@@ -51,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "cli")]
     let cli = Cli::parse();
     #[cfg(feature = "cli")]
-    config::load(Path::new(&cli.config))?;
+    config::load(Path::new(&cli.config.clone()))?;
     #[cfg(feature = "cli")]
     config::load(Path::new("config.toml"))?;
 
@@ -62,7 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "cli")]
     match &cli.command {
-        Some(Commands::Configfile {}) => cmd::configfile::run(),
+        Some(Commands::Configfile {}) => {
+            cmd::configfile::run(Path::new(&cli.config), &mut io::stdin().lock());
+        }
         // Some(Commands::CreateApiKey { name }) => cmd::create_api_key::run(name).await?,
         None => cmd::root::run().await?,
     }

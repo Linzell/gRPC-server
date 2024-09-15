@@ -101,7 +101,7 @@ pub fn init_tracer(conf: &Arc<Configuration>) -> Result<(), Error> {
 
     dispatch.try_init()?;
 
-    tracing::info!("🔍 Tracer initialized");
+    tracing::trace!("🔍 Tracer initialized");
 
     Ok(())
 }
