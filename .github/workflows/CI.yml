@@ -119,7 +119,7 @@ jobs:
         run: find . -name "*.profraw"
       - name: Generate coverage
         run: |
-          grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o lcov.info
+          grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" --ignore "api/rust/src/**/*" -o lcov.info
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
