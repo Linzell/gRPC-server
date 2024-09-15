@@ -16,7 +16,7 @@ lazy_static! {
     static ref CONFIG: Mutex<Arc<Configuration>> = Mutex::new(Arc::new(Default::default()));
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct Configuration {
     pub logging: Logging,
@@ -61,7 +61,7 @@ impl ConfigError {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct Logging {
     pub level: String,
@@ -71,13 +71,13 @@ pub struct Logging {
 impl Default for Logging {
     fn default() -> Self {
         Logging {
-            level: "info".into(),
+            level: "INFO".into(),
             json: false,
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct Api {
     pub bind: SocketAddr,
@@ -96,7 +96,7 @@ impl Default for Api {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct Gateway {
     #[serde(with = "humantime_serde")]
@@ -117,7 +117,7 @@ impl Default for Gateway {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct Monitoring {
     pub bind: String,
@@ -158,7 +158,7 @@ impl Default for Monitoring {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct UserAuthentication {
     pub enabled: String,
@@ -176,7 +176,7 @@ impl Default for UserAuthentication {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct OpenIdConnect {
     pub registration_enabled: bool,
@@ -210,7 +210,7 @@ impl Default for OpenIdConnect {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct OAuth2 {
     pub registration_enabled: bool,
@@ -250,13 +250,13 @@ impl Default for OAuth2 {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct JoinServer {
     pub servers: Vec<JoinServerServer>,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct JoinServerServer {
     // #[serde(alias = "join_eui")]
@@ -269,7 +269,7 @@ pub struct JoinServerServer {
     pub tls_key: String,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
 #[serde(default)]
 pub struct BackendInterfaces {
     pub bind: String,
@@ -332,7 +332,7 @@ pub fn get() -> Arc<Configuration> {
 pub fn save(conf: &Configuration, config_dir: &Path) -> Result<(), Error> {
     let config_file = config_dir.join("config.toml");
     let content = toml::to_string_pretty(conf)?;
-    fs::write(&config_file, content)?;
+    fs::write(config_file, content)?;
     Ok(())
 }
 
@@ -377,7 +377,9 @@ impl Configuration {
                 getter: |conf| conf.logging.level.clone(),
                 setter: |conf, value| {
                     let upper_value = value.to_uppercase();
-                    if ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF"].contains(&upper_value.as_str()) {
+                    if ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "OFF"]
+                        .contains(&upper_value.as_str())
+                    {
                         conf.logging.level = upper_value;
                         Ok(())
                     } else {
@@ -391,7 +393,9 @@ impl Configuration {
                 possible_values: "true, false".to_string(),
                 getter: |conf| conf.logging.json.to_string(),
                 setter: |conf, value| {
-                    conf.logging.json = value.parse().map_err(|_| "Invalid boolean value".to_string())?;
+                    conf.logging.json = value
+                        .parse()
+                        .map_err(|_| "Invalid boolean value".to_string())?;
                     Ok(())
                 },
             },
@@ -456,7 +460,9 @@ impl Configuration {
                 possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
                 getter: |conf| conf.api.bind.to_string(),
                 setter: |conf, value| {
-                    conf.api.bind = value.parse().map_err(|_| "Invalid socket address".to_string())?;
+                    conf.api.bind = value
+                        .parse()
+                        .map_err(|_| "Invalid socket address".to_string())?;
                     Ok(())
                 },
             },
@@ -518,18 +524,16 @@ impl Configuration {
     // }
 
     fn get_monitoring_fields() -> Vec<ConfigField> {
-        vec![
-            ConfigField {
-                path: "monitoring.bind".to_string(),
-                description: "Monitoring bind address".to_string(),
-                possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
-                getter: |conf| conf.monitoring.bind.clone(),
-                setter: |conf, value| {
-                    conf.monitoring.bind = value.to_string();
-                    Ok(())
-                },
+        vec![ConfigField {
+            path: "monitoring.bind".to_string(),
+            description: "Monitoring bind address".to_string(),
+            possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
+            getter: |conf| conf.monitoring.bind.clone(),
+            setter: |conf, value| {
+                conf.monitoring.bind = value.to_string();
+                Ok(())
             },
-        ]
+        }]
     }
 
     // fn get_integration_fields() -> Vec<ConfigField> {
@@ -563,22 +567,20 @@ impl Configuration {
     // }
 
     fn get_user_authentication_fields() -> Vec<ConfigField> {
-        vec![
-            ConfigField {
-                path: "user_authentication.enabled".to_string(),
-                description: "Enabled authentication backend".to_string(),
-                possible_values: "internal, openid_connect, oauth2".to_string(),
-                getter: |conf| conf.user_authentication.enabled.clone(),
-                setter: |conf, value| {
-                    if ["internal", "openid_connect", "oauth2"].contains(&value) {
-                        conf.user_authentication.enabled = value.to_string();
-                        Ok(())
-                    } else {
-                        Err("Invalid authentication backend".to_string())
-                    }
-                },
+        vec![ConfigField {
+            path: "user_authentication.enabled".to_string(),
+            description: "Enabled authentication backend".to_string(),
+            possible_values: "internal, openid_connect, oauth2".to_string(),
+            getter: |conf| conf.user_authentication.enabled.clone(),
+            setter: |conf, value| {
+                if ["internal", "openid_connect", "oauth2"].contains(&value) {
+                    conf.user_authentication.enabled = value.to_string();
+                    Ok(())
+                } else {
+                    Err("Invalid authentication backend".to_string())
+                }
             },
-        ]
+        }]
     }
 
     fn get_join_server_fields() -> Vec<ConfigField> {
@@ -588,18 +590,16 @@ impl Configuration {
     }
 
     fn get_backend_interfaces_fields() -> Vec<ConfigField> {
-        vec![
-            ConfigField {
-                path: "backend_interfaces.bind".to_string(),
-                description: "Backend Interfaces bind address".to_string(),
-                possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
-                getter: |conf| conf.backend_interfaces.bind.clone(),
-                setter: |conf, value| {
-                    conf.backend_interfaces.bind = value.to_string();
-                    Ok(())
-                },
+        vec![ConfigField {
+            path: "backend_interfaces.bind".to_string(),
+            description: "Backend Interfaces bind address".to_string(),
+            possible_values: "<IP>:<PORT> (e.g., 127.0.0.1:8080)".to_string(),
+            getter: |conf| conf.backend_interfaces.bind.clone(),
+            setter: |conf, value| {
+                conf.backend_interfaces.bind = value.to_string();
+                Ok(())
             },
-        ]
+        }]
     }
 
     // fn get_roaming_fields() -> Vec<ConfigField> {
@@ -641,4 +641,84 @@ impl Configuration {
     //         },
     //     ]
     // }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_load_default_config() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path();
+
+        load(config_dir).unwrap();
+
+        let loaded_config = get();
+        assert_eq!(loaded_config.logging.level, "INFO");
+        assert_eq!(loaded_config.logging.json, false);
+    }
+
+    #[test]
+    fn test_save_and_load_config() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path();
+
+        let mut custom_config = Configuration::default();
+        custom_config.logging.level = "debug".to_string();
+        custom_config.api.secret = "test_secret".to_string();
+
+        save(&custom_config, config_dir).unwrap();
+        load(config_dir).unwrap();
+
+        let loaded_config = get();
+        assert_eq!(loaded_config.logging.level, "debug");
+        assert_eq!(loaded_config.api.secret, "test_secret");
+    }
+
+    #[test]
+    fn test_set_and_get_config() {
+        let mut custom_config = Configuration::default();
+        custom_config.logging.json = true;
+        custom_config.api.bind = "127.0.0.1:9000".parse().unwrap();
+
+        set(custom_config.clone());
+
+        let retrieved_config = get();
+        assert_eq!(retrieved_config.logging.json, true);
+        assert_eq!(retrieved_config.api.bind.to_string(), "127.0.0.1:9000");
+    }
+
+    #[test]
+    fn test_get_interactive_fields() {
+        let fields = Configuration::get_interactive_fields();
+
+        // Check if some expected fields are present
+        assert!(fields.iter().any(|f| f.path == "logging.level"));
+        assert!(fields.iter().any(|f| f.path == "api.bind"));
+        assert!(fields.iter().any(|f| f.path == "gateway.ca_cert"));
+    }
+
+    #[test]
+    fn test_config_field_setter() {
+        let mut config = Configuration::default();
+        let fields = Configuration::get_interactive_fields();
+
+        // Test setting a valid log level
+        let log_level_field = fields.iter().find(|f| f.path == "logging.level").unwrap();
+        (log_level_field.setter)(&mut config, "DEBUG").unwrap();
+        assert_eq!(config.logging.level, "DEBUG");
+
+        // Test setting an invalid log level
+        assert!((log_level_field.setter)(&mut config, "INVALID").is_err());
+
+        // Test setting a valid boolean
+        let json_logging_field = fields.iter().find(|f| f.path == "logging.json").unwrap();
+        (json_logging_field.setter)(&mut config, "true").unwrap();
+        assert_eq!(config.logging.json, true);
+
+        // Test setting an invalid boolean
+        assert!((json_logging_field.setter)(&mut config, "not_a_bool").is_err());
+    }
 }

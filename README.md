@@ -93,10 +93,67 @@ To clean the Nix store, run the following command:
 nix-store --gc
 ```
 
-### Add user permissions to the Nix store
+### Add user permissions to the Nix folder
 
 To add user permissions to the Nix store, run the following command:
 
 ```bash
 sudo chown --recursive "$USER" /nix
 ```
+
+### Add Nix multi-user support
+
+To set up Nix with multi-user support, follow these steps:
+
+1. Install Nix in multi-user mode:
+
+   ```bash
+   sh <(curl -L https://nixos.org/nix/install) --daemon
+   ```
+
+2. Create the nix-daemon service:
+
+   ```bash
+   sudo mkdir -p /etc/systemd/system
+   sudo curl -o /etc/systemd/system/nix-daemon.service https://raw.githubusercontent.com/NixOS/nix/master/etc/systemd/nix-daemon.service
+   ```
+
+3. Enable and start the nix-daemon service:
+
+   ```bash
+   sudo systemctl enable nix-daemon
+   sudo systemctl start nix-daemon
+   ```
+
+4. Add the Nix bin directory to the system PATH:
+
+   ```bash
+   echo 'export PATH=$PATH:/nix/var/nix/profiles/default/bin' | sudo tee -a /etc/profile
+   ```
+
+5. Create a group for Nix users:
+
+   ```bash
+   sudo groupadd nixbld
+   ```
+
+6. Add users to the nixbld group:
+
+   ```bash
+   sudo usermod -a -G nixbld yourusername
+   ```
+
+7. Set up the Nix environment for all users:
+
+   ```bash
+   sudo mkdir -p /etc/nix
+   echo "build-users-group = nixbld" | sudo tee -a /etc/nix/nix.conf
+   ```
+
+8. Restart your shell or log out and log back in for changes to take effect.
+
+After completing these steps, Nix should be set up for multi-user support. Multiple users on the system can now use Nix independently, with a shared Nix store.
+
+Remember to replace 'yourusername' with the actual username you want to add to the nixbld group. You may need to repeat step 6 for each user who should have access to Nix.
+
+Note: The exact steps might vary slightly depending on your operating system and configuration. Always refer to the official Nix documentation for the most up-to-date instructions.

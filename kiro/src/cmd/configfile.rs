@@ -1,11 +1,10 @@
-use handlebars::{no_escape, Handlebars};
-use std::io::{self, Write};
-use std::path::Path;
 use colored::*;
+use std::io::{self, BufRead, Write};
+use std::path::Path;
 
 use crate::config::{self, Configuration};
 
-pub fn run(config_dir: &Path) {
+pub fn run(config_dir: &Path, input: &mut dyn BufRead) -> Configuration {
     let conf = config::get();
     let mut new_conf = (*conf).clone();
 
@@ -17,12 +16,15 @@ pub fn run(config_dir: &Path) {
         println!("\n{}", field.description.bright_green());
         println!("Current value: {}", current_value.yellow());
         println!("Possible values: {}", field.possible_values.cyan());
-        print!("{}", "Enter new value (or press Enter to keep current): ".bright_magenta());
+        print!(
+            "{}",
+            "Enter new value (or press Enter to keep current): ".bright_magenta()
+        );
         io::stdout().flush().unwrap();
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let new_value = input.trim();
+        let mut input_line = String::new();
+        input.read_line(&mut input_line).unwrap();
+        let new_value = input_line.trim();
 
         if !new_value.is_empty() {
             match (field.setter)(&mut new_conf, new_value) {
@@ -35,48 +37,65 @@ pub fn run(config_dir: &Path) {
     config::save(&new_conf, config_dir).expect("Failed to save configuration");
     config::set(new_conf.clone());
 
-    let template = r#"
-# Logging configuration
-[logging]
+    new_conf
+}
 
-level="{{ logging.level }}"
-json={{ logging.json }}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+    use std::net::{IpAddr, Ipv6Addr, SocketAddr};
+    use tempfile::TempDir;
 
-# API interface configuration
-[api]
+    fn mock_run(input: &str) -> (Configuration, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path();
+        let mut cursor = Cursor::new(input);
+        let result = run(config_dir, &mut cursor);
+        (result, temp_dir)
+    }
 
-bind="{{ api.bind }}"
-secret="{{ api.secret }}"
+    #[test]
+    fn test_run_with_empty_input() {
+        let input = "\n\n\n\n\n";
+        let (result, _temp_dir) = mock_run(input);
 
-# Gateway configuration
-[gateway]
+        assert_eq!(result.logging.level, "INFO");
+        assert_eq!(result.logging.json, false);
+        assert_eq!(
+            result.api.bind,
+            SocketAddr::new(IpAddr::from(Ipv6Addr::UNSPECIFIED), 50051)
+        );
+        assert_eq!(result.api.secret, "");
+    }
 
-ca_cert="{{ gateway.ca_cert }}"
-ca_key="{{ gateway.ca_key }}"
+    #[test]
+    fn test_run_with_valid_input() {
+        let input = "DEBUG\ntrue\n127.0.0.1:8080\nnewsecret\n";
+        let (result, _temp_dir) = mock_run(input);
 
-# Monitoring configuration
-[monitoring]
+        assert_eq!(result.logging.level, "DEBUG");
+        assert_eq!(result.logging.json, true);
+        assert_eq!(result.api.bind.to_string(), "127.0.0.1:8080");
+        assert_eq!(result.api.secret, "newsecret");
 
-bind="{{ monitoring.bind }}"
+        let global_config = config::get();
+        assert_eq!(global_config.logging.level, "DEBUG");
+        assert_eq!(global_config.logging.json, true);
+        assert_eq!(global_config.api.bind.to_string(), "127.0.0.1:8080");
+        assert_eq!(global_config.api.secret, "newsecret");
+    }
 
-# User authentication configuration
-[user_authentication]
+    #[test]
+    fn test_run_with_invalid_input() {
+        let input = "INVALID\nnotboolean\ninvalid:port\n";
+        let (result, _temp_dir) = mock_run(input);
 
-enabled="{{ user_authentication.enabled }}"
-
-# Backend interfaces configuration
-[backend_interfaces]
-
-bind="{{ backend_interfaces.bind }}"
-"#;
-
-    let mut reg = Handlebars::new();
-    reg.register_escape_fn(no_escape);
-    println!("\n{}", "🆕 New configuration:".bright_blue().bold());
-    println!(
-        "{}",
-        reg.render_template(template, &new_conf)
-            .expect("render configfile error")
-            .cyan()
-    );
+        assert_eq!(result.logging.level, "INFO");
+        assert_eq!(result.logging.json, false);
+        assert_eq!(
+            result.api.bind,
+            SocketAddr::new(IpAddr::from(Ipv6Addr::UNSPECIFIED), 50051)
+        );
+    }
 }
