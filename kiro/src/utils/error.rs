@@ -12,6 +12,7 @@ use crate::config;
 /// - `TraceError` - opentelemetry::trace::TraceError
 /// - `MetricsError` - opentelemetry::metrics::MetricsError
 /// - `TryInitError` - tracing_subscriber::util::TryInitError
+/// - `SurrealDBError` - surrealdb::Error
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum Error {
@@ -38,6 +39,9 @@ pub enum Error {
 
     #[error(transparent)]
     TryInitError(#[from] tracing_subscriber::util::TryInitError),
+
+    #[error(transparent)]
+    SurrealDBError(#[from] surrealdb::Error),
 }
 
 impl From<anyhow::Error> for Error {
@@ -62,6 +66,7 @@ impl From<Error> for tonic::Status {
             Error::TraceError(e) => tonic::Status::internal(e.to_string()),
             Error::MetricsError(e) => tonic::Status::internal(e.to_string()),
             Error::TryInitError(e) => tonic::Status::internal(e.to_string()),
+            Error::SurrealDBError(e) => tonic::Status::unavailable(e.to_string()),
         }
     }
 }

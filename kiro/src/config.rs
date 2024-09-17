@@ -20,10 +20,10 @@ lazy_static! {
 #[serde(default)]
 pub struct Configuration {
     pub logging: Logging,
-    // #[cfg(feature = "postgres")]
-    // pub postgresql: Postgresql,
-    // #[cfg(feature = "surrealdb")]
-    // pub surrealdb: Surreal,
+    #[cfg(feature = "postgres")]
+    pub postgresql: Postgresql,
+    #[cfg(feature = "surrealdb")]
+    pub surrealdb: Surreal,
     // pub redis: Redis,
     pub api: Api,
     pub gateway: Gateway,
@@ -73,6 +73,52 @@ impl Default for Logging {
         Logging {
             level: "INFO".into(),
             json: false,
+        }
+    }
+}
+
+#[cfg(feature = "postgres")]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(default)]
+pub struct Postgresql {
+    pub dsn: String,
+    pub max_open_connections: u32,
+    pub ca_cert: String,
+}
+
+#[cfg(feature = "postgres")]
+impl Default for Postgresql {
+    fn default() -> Self {
+        Postgresql {
+            dsn: "postgresql://kiro@localhost/kiro?sslmode=disable".into(),
+            max_open_connections: 10,
+            ca_cert: "".into(),
+        }
+    }
+}
+
+#[cfg(feature = "surrealdb")]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(default)]
+pub struct Surreal {
+    pub dsn: String,
+    pub username: String,
+    pub password: String,
+    pub namespace: String,
+    pub database: String,
+    pub max_open_connections: u32,
+}
+
+#[cfg(feature = "surrealdb")]
+impl Default for Surreal {
+    fn default() -> Self {
+        Surreal {
+            dsn: get_env_or("SURREAL_DB_HOST", "ws://localhost:8000").into(),
+            username: get_env_or("SURREAL_USERNAME", "root"),
+            password: get_env_or("SURREAL_PASSWORD", "root"),
+            namespace: get_env_or("SURREAL_NAMESPACE", "kiro"),
+            database: get_env_or("SURREAL_DATABASE", "kiro"),
+            max_open_connections: 10,
         }
     }
 }

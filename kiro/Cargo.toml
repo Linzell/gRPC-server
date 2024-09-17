@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["cli", "tracing"]
+default = ["cli", "tracing", "surrealdb"]
 cli = ["clap", "colored", "tempfile"]
 tracing = [
     "opentelemetry",

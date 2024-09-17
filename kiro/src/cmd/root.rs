@@ -5,7 +5,7 @@ use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook_tokio::Signals;
 use tracing::{info, warn};
 
-use crate::utils::error::Error;
+use crate::{storage, utils::error::Error};
 
 pub async fn run() -> Result<(), Error> {
     info!(
@@ -14,6 +14,8 @@ pub async fn run() -> Result<(), Error> {
         authors = env!("CARGO_PKG_AUTHORS"),
         "Starting up... 🚀"
     );
+
+    storage::setup().await?;
 
     let mut signals = Signals::new([SIGINT, SIGTERM])?;
 

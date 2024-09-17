@@ -25,6 +25,7 @@ mod cmd;
 
 mod config;
 mod prelude;
+mod storage;
 mod utils;
 
 #[cfg(feature = "cli")]
@@ -76,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     opentelemetry::global::shutdown_tracer_provider();
 
-    tracing::info!("Stop tracing... 🛑");
+    tracing::trace!("Stop tracing... 🛑");
 
     Ok(())
 }
