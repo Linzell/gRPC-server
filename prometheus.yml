@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'kiro'
+    static_configs:
+      - targets: ['kiro:3000']  # Adjust the port if necessary
+
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']  # Jaeger exposes metrics on port 14269 by default
+
+  - job_name: 'jaeger-collector'
+    static_configs:
+      - targets: ['jaeger:14268']  # Jaeger collector metrics
+
+  - job_name: 'jaeger-query'
+    static_configs:
+      - targets: ['jaeger:16686']  # Jaeger query service

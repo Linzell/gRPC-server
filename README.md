@@ -38,6 +38,17 @@ JAEGER_AGENT_HOST="http://localhost:4317"
 Useful commands:
 
 ```bash
+# Windows (PowerShell)
+.\make.ps1                  # Run the server
+.\make.ps1 dev              # Start dev environment
+.\make.ps1 version x.x.x    # Update version
+.\make.ps1 docker-dev       # Start Docker development environment
+.\make.ps1 test             # Run tests
+.\make.ps1 test-all         # Run all tests including integration
+.\make.ps1 help             # Show available commands
+.\make.ps1 config           # Configure the server
+
+# macOS and Linux
 make                        # Run the server
 make dev                    # Start dev environment
 make version x.x.x          # Update version
@@ -63,6 +74,10 @@ docker compose build
 
 Run the server:
 ```bash
+# Windows (PowerShell)
+.\make.ps1
+
+# macOS and Linux
 make
 ```
 
@@ -79,6 +94,10 @@ Access [Jaeger UI](http://localhost:16686/)
 If you have Nix installed, you can use it to set up the development environment:
 
 ```bash
+# Windows (PowerShell)
+.\make.ps1 dev
+
+# macOS and Linux
 make dev
 ```
 
@@ -93,6 +112,10 @@ nix-store --gc
 To add user permissions to the Nix folder:
 
 ```bash
+# Windows (PowerShell)
+icacls C:\nix /grant "$env:USERNAME:(OI)(CI)F" /T
+
+# macOS and Linux
 sudo chown --recursive "$USER" /nix
 ```
 
@@ -102,11 +125,19 @@ To set up Nix with multi-user support:
 
 1. Install Nix in multi-user mode:
    ```bash
+   # Windows (PowerShell)
+   iex ((New-Object System.Net.WebClient).DownloadString('https://nixos.org/nix/install')) -daemon
+
+   # macOS and Linux
    sh <(curl -L https://nixos.org/nix/install) --daemon
    ```
 
 2. Create and start the nix-daemon service:
    ```bash
+   # Windows (PowerShell)
+   # Not applicable, Windows uses a different service management system
+
+   # macOS and Linux
    sudo mkdir -p /etc/systemd/system
    sudo curl -o /etc/systemd/system/nix-daemon.service https://raw.githubusercontent.com/NixOS/nix/master/etc/systemd/nix-daemon.service
    sudo systemctl enable nix-daemon
@@ -115,17 +146,38 @@ To set up Nix with multi-user support:
 
 3. Add Nix bin to PATH:
    ```bash
+   # Windows (PowerShell)
+   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\nix\usr\bin", [EnvironmentVariableTarget]::Machine)
+
+   # macOS and Linux
    echo 'export PATH=$PATH:/nix/var/nix/profiles/default/bin' | sudo tee -a /etc/profile
    ```
 
 4. Create nixbld group and add users:
    ```bash
+   # Windows (PowerShell)
+   # Not applicable, Windows uses a different user/group management system
+
+   # macOS
+   sudo dscl . -create /Groups/nixbld
+   sudo dscl . -create /Groups/nixbld PrimaryGroupID 301
+   sudo dscl . -create /Users/nixbld1 UniqueID 301
+   sudo dscl . -create /Users/nixbld1 PrimaryGroupID 301
+   sudo dscl . -append /Groups/nixbld GroupMembership nixbld1
+   sudo dscl . -append /Groups/nixbld GroupMembership yourusername
+
+   # Linux
    sudo groupadd nixbld
    sudo usermod -a -G nixbld yourusername
    ```
 
 5. Set up Nix configuration:
    ```bash
+   # Windows (PowerShell)
+   New-Item -ItemType Directory -Force -Path "$env:APPDATA\nix"
+   Add-Content "$env:APPDATA\nix\nix.conf" "build-users-group = nixbld"
+
+   # macOS and Linux
    sudo mkdir -p /etc/nix
    echo "build-users-group = nixbld" | sudo tee -a /etc/nix/nix.conf
    ```

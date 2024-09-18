@@ -113,7 +113,7 @@ pub struct Surreal {
 impl Default for Surreal {
     fn default() -> Self {
         Surreal {
-            dsn: get_env_or("SURREAL_DB_HOST", "ws://localhost:8000").into(),
+            dsn: get_env_or("SURREAL_DB_HOST", "ws://localhost:8000"),
             username: get_env_or("SURREAL_USERNAME", "root"),
             password: get_env_or("SURREAL_PASSWORD", "root"),
             namespace: get_env_or("SURREAL_NAMESPACE", "kiro"),
