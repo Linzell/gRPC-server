@@ -1,6 +1,6 @@
 [package]
 name = "kiro"
-description = "A client for the Kiro API"
+description = "The server for the Kiro tool"
 version = "0.0.2"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
 homepage = "https://github.com/Linzell/API-Client"
@@ -9,8 +9,11 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["cli", "tracing", "surrealdb"]
-cli = ["clap", "colored", "tempfile"]
+default = ["tracing", "surrealdb"]
+
+auth = ["kiro_auth"]
+mailer = ["dep:uuid"]
+
 tracing = [
     "opentelemetry",
     "opentelemetry_sdk",
@@ -20,64 +23,101 @@ tracing = [
     "tracing-opentelemetry",
     "dep:tracing-subscriber",
 ]
-postgres = ["dep:diesel", "dep:diesel_migrations"]
-surrealdb = ["dep:surrealdb", "dep:surrealdb-migrations"]
+
+postgres = ["kiro_database/postgres"]
+surrealdb = ["kiro_database/surrealdb"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Dependencies for the error handling
-anyhow = { version = "1.0.86", default-features = false }
-thiserror = { version = "1.0.61", default-features = false }
+# General dependencies
+kiro_database = { workspace = true, optional = true }
+chrono = { workspace = true }
+dotenv = { workspace = true }
 
 # Dependencies for the HTTP client
-futures = { version = "0.3" }
-tokio = { workspace = true, features = ["full"] }
-tonic = { workspace = true, features = ["transport"] }
+async-stream = { workspace = true }
+async-trait = { workspace = true }
+http = { workspace = true }
+futures = { workspace = true }
+reqwest = { workspace = true, features = [
+    "json",
+    "stream",
+    "blocking",
+    "multipart",
+] }
+tokio = { workspace = true, features = ["full", "signal"] }
+tokio-util = { workspace = true }
+tokio-stream = { workspace = true }
 
-# Dependencies for the configuration
-humantime-serde = { version = "1.1" }
-lazy_static = { workspace = true }
-serde = { workspace = true, features = ["derive", "rc"] }
-toml = { version = "0.8" }
+# Dependencies for the gRPC server
+axum = { workspace = true, features = ["http1", "http2", "tokio"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tonic = { workspace = true, features = [
+    "router",
+    "transport",
+    "tls",
+    "tls-roots",
+] }
+tonic-web = { version = "0.12.3", default-features = false }
+tonic-reflection = { version = "0.12.3", default-features = false, features = [
+    "server",
+] }
+tonic-health = { version = "0.12.3", default-features = false, features = [
+    "transport",
+] }
+tower-http = { version = "0.6", default-features = false, features = [
+    "auth",
+    "cors",
+    "trace",
+] }
 
-# Dependencies for the signal handling
-signal-hook = { version = "0.3" }
-signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+# TLS dependencies
+rustls = { version = "0.23.10", default-features = false }
+rustls-pemfile = { version = "2.1.2", default-features = false }
+
+# Dependencies for the error handling
+anyhow = { workspace = true }
+thiserror = { workspace = true }
 
 # Optional dependencies
-## Dependencies for CLI
-clap = { version = "4.5", features = ["derive", "cargo"], optional = true }
-colored = { version = "2.1", optional = true }
-tempfile = { version = "3.12", optional = true }
+## Mailer dependencies
+uuid = { version = "1.9.1", default-features = false, features = [
+    "v4",
+], optional = true }
 
 # Optional dependencies
-## Dependencies for database backends
-diesel = { workspace = true, features = ["postgres_backend"], optional = true }
-diesel_migrations = { version = "2.2", optional = true }
-surrealdb = { workspace = true, features = ["kv-mem", "jwks"], optional = true }
-surrealdb-migrations = { version = "1.4.1", optional = true }
+## Auth dependencies
+kiro_auth = { workspace = true, optional = true }
+
+# Optional dependencies
+## Testing dependencies
+mockall = { workspace = true, optional = true }
 
 # Optional dependencies
 ## Dependencies for the OpenTelemetry
-opentelemetry = { version = "0.24.0", optional = true }
-opentelemetry_sdk = { version = "0.24.1", features = [
+opentelemetry = { workspace = true, optional = true }
+opentelemetry_sdk = { workspace = true, features = [
     "rt-tokio",
     "rt-tokio-current-thread",
 ], optional = true }
-opentelemetry-otlp = { version = "0.17.0", features = [
+opentelemetry-otlp = { workspace = true, features = [
     "grpc-tonic",
     "tls-roots",
+    "trace",
 ], optional = true }
-tracing-opentelemetry = { version = "0.25", optional = true }
 
 # Optional dependencies
 ## Dependencies for tracing
-tracing = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true, features = ["log"] }
 tracing-core = { workspace = true, optional = true }
+tracing-opentelemetry = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, features = [
     "env-filter",
     "fmt",
     "json",
 ], optional = true }
+
 
 [dev-dependencies]
 dotenv = { workspace = true }

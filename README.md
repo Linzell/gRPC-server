@@ -101,6 +101,12 @@ If you have Nix installed, you can use it to set up the development environment:
 make dev
 ```
 
+To use the specific Nixpkgs version (nixos-24.05), you can run:
+
+```bash
+nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/nixos-24.05.tar.gz
+```
+
 ### 🧹 Nix Maintenance
 
 To clean the Nix store:

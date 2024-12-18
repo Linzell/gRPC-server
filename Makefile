@@ -1,6 +1,6 @@
 .PHONY: dist api
 
-dist: docker-services
+dist:
 	cd kiro && $(MAKE) dist
 
 help: docker-services
@@ -37,18 +37,19 @@ docker-services:
 		powershell -Command "if (-not (docker ps -a | Select-String surrealdb)) { echo 'Starting SurrealDB...'; docker-compose up -d surrealdb }"; \
 		powershell -Command "if (-not (docker ps -a | Select-String jaeger)) { echo 'Starting Jaeger...'; docker-compose up -d jaeger }"; \
 	else \
-		docker ps -a | grep -q surrealdb || (echo "Starting SurrealDB..." && docker-compose up -d surrealdb); \
-		docker ps -a | grep -q jaeger || (echo "Starting Jaeger..." && docker-compose up -d jaeger); \
+		docker ps | grep -q surrealdb || (echo "Starting SurrealDB..." && docker-compose up -d surrealdb); \
+		docker ps | grep -q jaeger || (echo "Starting Jaeger..." && docker-compose up -d jaeger); \
 	fi
 
 api: version
 		cd api && $(MAKE)
 
-dev:
+dev: docker-services
 	git submodule update --init --recursive
 	$(if $(filter $(OS),Windows_NT), \
-		(echo "Nix is not natively supported on Windows. Please use WSL or Docker."), \
-		nix-shell \
+		(echo "Nix is not natively supported on Windows. Please use WSL or Docker." && \
+		powershell -Command "icacls C:\nix /grant \"$env:USERNAME:(OI)(CI)F\" /T"), \
+		(nix-shell && sudo chown --recursive "$$USER" /nix) \
 	)
 
 docker-dev:
