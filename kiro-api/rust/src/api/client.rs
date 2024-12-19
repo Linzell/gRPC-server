@@ -1,4 +1,4 @@
-// lib.rs
+// client.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use prost;
+pub mod v1 {
+    include!(concat!(env!("OUT_DIR"), "/client/client.v1.rs"));
+    #[cfg(feature = "json")]
+    include!(concat!(env!("OUT_DIR"), "/client/client.v1.serde.rs"));
+}
 
-#[cfg(feature = "api")]
-mod api;
-
-#[cfg(feature = "auth")]
-pub use api::auth;
-#[cfg(feature = "client")]
-pub use api::client;
-#[cfg(feature = "api")]
-pub use api::common;
-#[cfg(feature = "api")]
-pub use api::google;
-#[cfg(feature = "group")]
-pub use api::group;
+// #[cfg(feature = "surrealdb")]
+// impl From<crate::client::v1::surrealdb::Error> for tonic::Status {
+//     fn from(e: crate::client::v1::surrealdb::Error) -> Self {
+//         tonic::Status::new(tonic::Code::Internal, format!("{:?}", e))
+//     }
+// }

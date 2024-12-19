@@ -15,19 +15,31 @@
 // limitations under the License.
 
 mod error;
+mod http;
 mod models;
+mod services;
 
 /// # Auth Module
 ///
 /// The auth module provides authentication functionality.
 pub use models::SessionStore;
 
-/// # Create Session Model
-///
-/// The create session model provides a model for creating sessions.
-pub use models::CreateSessionModel;
-
 /// # Auth Models
 ///
 /// The auth module provides models for authentication.
 pub use models::SessionModel;
+
+/// # Auth Services
+///
+/// The auth module provides services for authentication.
+pub use services::AuthService;
+
+/// # Auth Server Builder
+///
+/// The auth module provides a builder for the authentication server.
+pub use kiro_api::auth::v1::auth_service_server::AuthServiceServer;
+
+/// # Auth File Descriptor Set
+///
+/// The auth module provides the file descriptor set for the authentication service.
+pub use kiro_api::auth::AUTH_V1_FILE_DESCRIPTOR_SET;

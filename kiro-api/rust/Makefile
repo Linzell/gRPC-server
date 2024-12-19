@@ -1,13 +1,11 @@
-.PHONY: proto version test
+.PHONY: proto test
 
 all: proto test
 
 proto:
 	rm -rf proto
-	mkdir -p proto/kiro
-	mkdir -p proto/google
-	cp -r ../SRC-Proto/proto/* proto/kiro/
-	mv proto/kiro/google proto/google
+	mkdir -p proto
+	cp -r ../SRC-Proto/proto/**/ proto/
 
 test:
 	cargo fmt --check

@@ -1,4 +1,4 @@
-// lib.rs
+// builder/services/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use prost;
-
-#[cfg(feature = "api")]
-mod api;
-
 #[cfg(feature = "auth")]
-pub use api::auth;
-#[cfg(feature = "client")]
-pub use api::client;
-#[cfg(feature = "api")]
-pub use api::common;
-#[cfg(feature = "api")]
-pub use api::google;
-#[cfg(feature = "group")]
-pub use api::group;
+mod auth;
+#[cfg(feature = "auth")]
+pub use auth::build_auth_service;
+
+// #[cfg(feature = "group")]
+// mod group;
+// #[cfg(feature = "group")]
+// pub use group::build_group_service;
+
+// #[cfg(feature = "project")]
+// mod project;
+// #[cfg(feature = "project")]
+// pub use project::build_project_service;

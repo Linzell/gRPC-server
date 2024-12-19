@@ -1,4 +1,4 @@
-// lib.rs
+// config.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use prost;
+#[allow(dead_code)]
+pub struct BuildConfig {
+    pub well_known_types_path: &'static str,
+    pub compile_well_known_types: bool,
+}
 
-#[cfg(feature = "api")]
-mod api;
-
-#[cfg(feature = "auth")]
-pub use api::auth;
-#[cfg(feature = "client")]
-pub use api::client;
-#[cfg(feature = "api")]
-pub use api::common;
-#[cfg(feature = "api")]
-pub use api::google;
-#[cfg(feature = "group")]
-pub use api::group;
+impl Default for BuildConfig {
+    fn default() -> Self {
+        Self {
+            #[cfg(feature = "json")]
+            well_known_types_path: "::pbjson_types",
+            #[cfg(not(feature = "json"))]
+            well_known_types_path: "::prost_types",
+            compile_well_known_types: true,
+        }
+    }
+}

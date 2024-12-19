@@ -1,36 +1,7 @@
 .PHONY: dist api
 
-dist:
+dist: docker-services
 	cd kiro && $(MAKE) dist
-
-help: docker-services
-	cd kiro && $(MAKE) help
-
-config: docker-services
-	cd kiro && $(MAKE) config
-
-version:
-	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
-		echo "Error: VERSION is not set. Please provide a version number."; \
-		exit 1; \
-	fi
-	@$(eval VERSION := $(filter-out $@,$(MAKECMDGOALS)))
-	$(if $(filter $(OS),Windows_NT), \
-		(powershell -Command "(Get-Content ./kiro/Cargo.toml) -replace '^version = .*', 'version = \"$(VERSION)\"' | Set-Content ./kiro/Cargo.toml" && \
-		powershell -Command "(Get-Content ./api/rust/Cargo.toml) -replace '^version = .*', 'version = \"$(VERSION)\"' | Set-Content ./api/rust/Cargo.toml"), \
-		$(if $(filter $(shell uname),Darwin), \
-			(sed -i '' 's/^version = .*/version = "$(VERSION)"/g' ./kiro/Cargo.toml && \
-			sed -i '' 's/^version = .*/version = "$(VERSION)"/g' ./api/rust/Cargo.toml), \
-			(sed -i 's/^version = .*/version = "$(VERSION)"/g' ./kiro/Cargo.toml && \
-			sed -i 's/^version = .*/version = "$(VERSION)"/g' ./api/rust/Cargo.toml) \
-		) \
-	)
-
-	cd api && $(MAKE)
-	$(MAKE) test
-	git add .
-	git commit -v -m "Bump version to $(VERSION)"
-	git tag -a v$(VERSION) -m "v$(VERSION)"
 
 docker-services:
 	@if [ "$(OS)" = "Windows_NT" ]; then \
@@ -41,24 +12,31 @@ docker-services:
 		docker ps | grep -q jaeger || (echo "Starting Jaeger..." && docker-compose up -d jaeger); \
 	fi
 
-api: version
-		cd api && $(MAKE)
+api:
+	cd kiro-api && $(MAKE)
 
-dev: docker-services
+dev:
 	git submodule update --init --recursive
 	$(if $(filter $(OS),Windows_NT), \
 		(echo "Nix is not natively supported on Windows. Please use WSL or Docker." && \
 		powershell -Command "icacls C:\nix /grant \"$env:USERNAME:(OI)(CI)F\" /T"), \
-		(nix-shell && sudo chown --recursive "$$USER" /nix) \
+		$(if $(filter $(shell uname),Linux), \
+			(sudo chown --recursive "$$USER" /nix && nix-shell), \
+			(nix-shell) \
+		) \
 	)
 
-docker-dev:
-	docker compose run --rm --service-ports --name kiro kiro
-
 test:
-	cd api && $(MAKE) rust
-	cd kiro && $(MAKE) test
-
-test-all:
-	cd api && $(MAKE) rust
-	cd kiro && $(MAKE) test-all
+	@echo "Running quality checks across all crates..."
+	@echo "Checking code formatting..."
+	cargo fmt --all -- --check
+	@echo "Running clippy..."
+	cargo clippy --all-features -- -D warnings
+	@echo "Running tests..."
+	cd kiro-api && $(MAKE) rust
+	cd kiro-database && $(MAKE) test --all-features -- --nocapture
+	cd kiro-auth && $(MAKE) test --all-features -- --nocapture
+	cd kiro && $(MAKE) test --all-features -- --nocapture
+	@echo "Running security audit..."
+	cargo audit
+	@echo "All quality checks completed."

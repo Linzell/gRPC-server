@@ -25,8 +25,3 @@ pub use session_model::SessionStore;
 ///
 /// The session model provides a model for sessions.
 pub use session_model::SessionModel;
-
-/// # Create Session Model
-///
-/// The create session model provides a model for creating sessions.
-pub use session_model::CreateSessionModel;

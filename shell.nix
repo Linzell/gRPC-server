@@ -1,4 +1,4 @@
-{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/nixos-24.05.tar.gz") {} }:
+{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/nixos-24.05.tar.gz") {}, lib ? pkgs.lib }:
 
 pkgs.mkShell {
   nativeBuildInputs = [
@@ -10,6 +10,15 @@ pkgs.mkShell {
     pkgs.protobuf
     pkgs.postgresql
 
+    # Code quality tools
+    pkgs.cargo-audit
+    pkgs.cargo-watch
+    pkgs.cargo-tarpaulin
+    pkgs.cargo-cache
+    pkgs.clippy
+    pkgs.rustfmt
+
+    # Development tools
     pkgs.starship
     pkgs.zsh
     pkgs.oh-my-zsh
@@ -22,7 +31,14 @@ pkgs.mkShell {
     pkgs.tmux
     pkgs.direnv
     pkgs.bash-completion
+  ]
+  # Required for mac
+  ++ lib.optionals pkgs.stdenv.isDarwin [
+    # Additional darwin specific inputs can be set here
+    pkgs.libiconv
+    pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
   ];
+
   LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
   BINDGEN_EXTRA_CLANG_ARGS = "-I${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.llvmPackages.libclang.version}/include";
   DOCKER_BUILDKIT = "1";
@@ -33,6 +49,9 @@ pkgs.mkShell {
     export CARGO_HOME=$HOME/.cargo
     export PATH=$CARGO_HOME/bin:$PATH
     unset SOURCE_DATE_EPOCH
+
+    # Install required Rust components
+    rustup component add rustfmt clippy rust-src
 
     eval "$(starship init bash)"
 
@@ -53,5 +72,8 @@ pkgs.mkShell {
     alias find='fd'
 
     echo "✨ Welcome to your enhanced Rust development environment! ✨"
+    echo "Development tools installed:"
+    echo "- Code Quality: cargo-audit, cargo-watch, cargo-tarpaulin, clippy, rustfmt"
+    echo "- Utils: starship, fzf, ripgrep, eza, bat, fd"
   '';
 }

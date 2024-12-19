@@ -17,19 +17,16 @@
 use tonic_reflection::server::v1alpha::{ServerReflection, ServerReflectionServer};
 
 pub fn setup_reflection_service() -> ServerReflectionServer<impl ServerReflection> {
-    tonic_reflection::server::Builder::configure()
+    let builder = tonic_reflection::server::Builder::configure();
+
+    let builder = if cfg!(feature = "auth") {
+        builder.register_encoded_file_descriptor_set(kiro_auth::AUTH_V1_FILE_DESCRIPTOR_SET)
+    } else {
+        builder
+    };
+
+    builder
         .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::client::CLIENT_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::module::MODULE_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(
-        //     api::module_registry::MODULE_REGISTRY_V1_FILE_DESCRIPTOR_SET,
-        // )
-        // .register_encoded_file_descriptor_set(api::payment::PAYMENT_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::project::PROJECT_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::setup::SETUP_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::setup::SETUP_V2_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::storage::STORAGE_V1_FILE_DESCRIPTOR_SET)
-        // .register_encoded_file_descriptor_set(api::store::STORE_V1_FILE_DESCRIPTOR_SET)
         .build_v1alpha()
         .unwrap()
 }

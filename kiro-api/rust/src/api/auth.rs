@@ -1,4 +1,4 @@
-// lib.rs
+// auth.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use prost;
+pub const AUTH_V1_FILE_DESCRIPTOR_SET: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/auth/proto_descriptor_v1.bin"));
 
-#[cfg(feature = "api")]
-mod api;
-
-#[cfg(feature = "auth")]
-pub use api::auth;
-#[cfg(feature = "client")]
-pub use api::client;
-#[cfg(feature = "api")]
-pub use api::common;
-#[cfg(feature = "api")]
-pub use api::google;
-#[cfg(feature = "group")]
-pub use api::group;
+pub mod v1 {
+    include!(concat!(env!("OUT_DIR"), "/auth/auth.v1.rs"));
+    #[cfg(feature = "json")]
+    include!(concat!(env!("OUT_DIR"), "/auth/auth.v1.serde.rs"));
+}

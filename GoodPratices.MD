@@ -1,86 +1,376 @@
-# Liste des bonnes pratiques à appliquer sur le projet pour la partie Backend API
+# List of Best Practices for the Backend Project 📚
 
-*Note: C'est pratiques peuvent évoluer en fonction des retours d'expériences de l'équipe, n'hésitez pas a remonter vos suggestions.*
+*Note: These practices may evolve based on team feedback. Please feel free to share your suggestions.*
 
-## Architecture
+## Introduction
 
-### Dossier
+This document outlines the best practices for developing the Backend API. These practices ensure code quality, maintainability, and consistency across the project.
 
-- **api**: Contient les fichiers de configuration de l'APIs
-- **database**: Contient les fichiers de configuration de la base de données
-- **models**: Contient les modèles de données
-- **services**: Contient les services de l'application
-- **utils**: Contient les utilitaires de l'application
+### Why These Practices Matter
 
-## Tests
+- **Code Quality**: Ensures reliable and maintainable code
+- **Team Collaboration**: Facilitates better team coordination
+- **Project Scalability**: Makes the project easier to scale
+- **Knowledge Sharing**: Helps new team members understand the codebase
 
-### Composition des tests
+## Project Structure 🏗️
 
-- Les tests sont écrits en utilisant le format suivant: `fn test_name()`
-- Les tests sont écrits en utilisant le framework de test de Rust (https://doc.rust-lang.org/book/ch11-01-writing-tests.html)
+### Workspace Organization
 
-## Documentation
+The project uses a Rust workspace to manage multiple related crates. This approach provides several benefits:
 
-### Composition de la documentation
+- **Modular Development**: Each crate has a specific responsibility
+- **Dependency Management**: Shared dependencies are managed at the workspace level
+- **Build Optimization**: Faster compilation through shared build artifacts
 
-- La documentation est écrite en Markdown
-- La documentation est écrite en anglais
-- La documentation est écrite en utilisant le format Markdown de Github (https://guides.github.com/features/mastering-markdown/)
+```toml
+[workspace]
+resolver = "2"
+members = [
+    "api/rust",     # Protocol definitions
+    "auth",         # Authentication
+    "backend",      # Core services
+    "client",       # Client SDK
+    "database",     # Database
+    "mailer",       # Email
+    "payment",      # Payments
+    "storage",      # Storage
+]
+```
 
-### Composition de la documentation du code
+### Crate Purpose and Responsibilities
 
-- La documentation du code est écrite en utilisant le format Rust (https://doc.rust-lang.org/reference/comments.html)
-- La documentation du code est écrite en anglais
-- **La documentation du code est obligatoire avant de faire une Pull Request**
+#### api
+- Defines gRPC protocol contracts
+- Handles protocol buffer generation
+- Manages API versioning
+- Example:
+```rust
+// api/rust/src/lib.rs
+pub mod v1 {
+    tonic::include_proto!("v1");
+}
+```
 
-## Conventions de code
+#### auth
+- Manages authentication and authorization
+- Handles JWT tokens
+- Implements OAuth flows
+- Example:
+```rust
+// auth/src/jwt.rs
+pub struct JwtManager {
+    secret: String,
+    expiration: Duration,
+}
 
-### Composition des noms de variables
+impl JwtManager {
+    /// Creates a new JWT token for a user
+    ///
+    /// # Arguments
+    /// * `user_id` - The ID of the user
+    /// * `roles` - The roles assigned to the user
+    ///
+    /// # Returns
+    /// A JWT token string or an error
+    pub async fn create_token(
+        &self,
+        user_id: UserId,
+        roles: Vec<Role>,
+    ) -> Result<String, AuthError> {
+        // Implementation
+    }
+}
+```
 
-- Les noms de variables sont écrits en snake_case
-- Les noms de variables sont explicites
-- Les noms de variables sont en anglais
+## Model Mitosis Pattern 🧬
 
-### Composition des noms de fonctions
+### What is Model Mitosis?
 
-- Les noms de fonctions sont écrits en snake_case
-- Les noms de fonctions sont explicites
-- Les noms de fonctions sont en anglais
+Model Mitosis is a pattern where we maintain different representations of our data models across different layers of the application. Each representation is optimized for its specific use case.
 
-## Conventions de commit et pull request
+### Why Use Model Mitosis?
 
-- Les messages de commit sont écrits en anglais
-- Les messages de commit sont écrits en utilisant le format suivant: `type(scope): subject`
+1. **Layer Independence**
+   - Each layer can evolve independently
+   - Changes in one layer don't force changes in others
+   - Easier maintenance and refactoring
 
-- Les pull requests sont écrites en français
-- Les pull requests sont écrites en utilisant le format suivant: `type(scope): subject`
-- Une pull request ne doit pas contenir plus de 500 lignes de code
-- Une pull request doit contenir l'avancée du travail effectué et les points bloquants
-- Une pull request doit contenir des captures d'écran de la fonctionnalité développée
+2. **Type Safety**
+   - Compile-time checking of data transformations
+   - Clear boundaries between layers
+   - Explicit error handling
 
-### Types de commit (type) et pull request (type)
+3. **Performance Optimization**
+   - Each model can be optimized for its use case
+   - Efficient serialization/deserialization
+   - Minimal memory footprint
 
-- **feat**: Ajout d'une nouvelle fonctionnalité
-- **fix**: Correction d'un bug
-- **docs**: Modification de la documentation
-- **refactor**: Modification du code sans ajouter de fonctionnalité ou corriger un bug
-- **perf**: Modification du code pour améliorer les performances
-- **test**: Ajout ou modification de tests
-- **build**: Modification de la configuration de build
-- **ci**: Modification de la configuration de CI
-- **chore**: Modification de la configuration de l'application
-- **revert**: Revert d'un commit précédent
+### Model Layers
 
-### Scopes de commit (scope) et pull request (scope)
+#### 1. Protocol Models (api)
+```protobuf
+// api/rust/proto/user.proto
+message User {
+    string id = 1;
+    string email = 2;
+    UserStatus status = 3;
+    repeated string roles = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+```
+*Purpose*: Defines the network contract and ensures backward compatibility
 
-- **database**: Modification de la configuration de la base de données
-- **models**: Modification d'un modèle de données
-- **services**: Modification d'un service
-- **utils**: Modification d'un utilitaire
-- **tests**: Modification d'un test
-- **docs**: Modification de la documentation
-- **config**: Modification de la configuration de l'application
-- **build**: Modification de la configuration de build
-- **ci**: Modification de la configuration de CI
-- **deps**: Modification des dépendances
-- **other**: Autre modification
+#### 2. Domain Models (backend)
+```rust
+// backend/src/domain/models/user.rs
+#[derive(Debug, Clone)]
+pub struct User {
+    id: UserId,
+    email: Email,
+    status: UserStatus,
+    roles: HashSet<Role>,
+    created_at: DateTime<Utc>,
+}
+
+impl User {
+    /// Validates and creates a new user
+    pub fn new(
+        email: String,
+        roles: Vec<String>,
+    ) -> Result<Self, DomainError> {
+        let email = Email::new(email)?;
+        let roles = Role::from_strings(roles)?;
+
+        Ok(Self {
+            id: UserId::new(),
+            email,
+            status: UserStatus::Pending,
+            roles: roles.into_iter().collect(),
+            created_at: Utc::now(),
+        })
+    }
+
+    /// Checks if the user has admin privileges
+    pub fn is_admin(&self) -> bool {
+        self.roles.contains(&Role::Admin)
+    }
+}
+```
+*Purpose*: Implements business logic and enforces domain rules
+
+#### 3. Database Models (database)
+```rust
+// database/src/models/user.rs
+#[derive(Queryable, Insertable)]
+#[diesel(table_name = users)]
+pub struct UserRecord {
+    pub id: String,
+    pub email: String,
+    pub status: i32,
+    pub roles: Vec<String>,
+    pub created_at: NaiveDateTime,
+}
+
+impl UserRecord {
+    /// Converts a database record to a domain model
+    pub fn to_domain(self) -> Result<User, DatabaseError> {
+        Ok(User {
+            id: UserId::from_string(&self.id)?,
+            email: Email::new(self.email)?,
+            status: UserStatus::from_i32(self.status)?,
+            roles: Role::from_strings(self.roles)?,
+            created_at: DateTime::from_naive_utc_and_offset(
+                self.created_at,
+                Utc,
+            ),
+        })
+    }
+}
+```
+*Purpose*: Optimized for database operations and persistence
+
+#### 4. Client Models (client)
+```rust
+// client/src/models/user.rs
+#[derive(Serialize)]
+pub struct UserDTO {
+    pub id: String,
+    pub email: String,
+    pub status: String,
+}
+```
+
+### Model Conversions
+```rust
+// backend/src/domain/user.rs
+impl User {
+    pub fn from_proto(proto: api::User) -> Result<Self, Error> {
+        Ok(Self {
+            id: UserId::new(proto.id)?,
+            email: Email::new(proto.email)?,
+            status: UserStatus::from_i32(proto.status)?,
+        })
+    }
+
+    pub fn into_proto(self) -> api::User {
+        api::User {
+            id: self.id.to_string(),
+            email: self.email.to_string(),
+            status: self.status as i32,
+        }
+    }
+}
+```
+
+## Development Workflow 🛠️
+
+### Setup Requirements
+```bash
+# Required tools
+rustup component add rustfmt clippy rust-src
+cargo install cargo-audit cargo-watch cargo-tarpaulin
+
+# Environment setup
+cp .env.example .env
+docker-compose up -d
+```
+
+### Daily Development
+```bash
+# Start development with watch mode
+cargo watch -x fmt -x clippy -x test
+
+# Build and test specific crate
+cargo build -p backend
+cargo test -p backend
+
+# Generate protocol files
+cargo build -p api
+```
+
+### Quality Checks
+```bash
+# Before commit
+cargo fmt --all -- --check
+cargo clippy --all-features -- -D warnings
+cargo test --all-features
+cargo audit
+```
+
+## Testing Strategy 🧪
+
+### Test Organization
+```rust
+// backend/src/services/user.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use database::MockDatabase;
+
+    #[tokio::test]
+    async fn test_user_creation() {
+        let mock_db = MockDatabase::new();
+        let service = UserService::new(mock_db);
+
+        let result = service
+            .create_user("test@example.com", "password")
+            .await;
+
+        assert!(result.is_ok());
+    }
+}
+```
+
+### Integration Testing
+```rust
+// backend/tests/api_integration.rs
+use client::Client;
+
+#[tokio::test]
+async fn test_full_user_flow() {
+    let client = Client::new("http://localhost:50051");
+
+    // Test user creation
+    let user = client
+        .create_user("test@example.com", "password")
+        .await?;
+
+    // Test authentication
+    let token = client
+        .authenticate("test@example.com", "password")
+        .await?;
+
+    assert!(token.is_valid());
+}
+```
+
+## Documentation 📚
+
+### Documentation Composition
+
+- Documentation is written in Markdown
+- Documentation is written in English
+- Documentation follows the GitHub Markdown format (https://guides.github.com/features/mastering-markdown/)
+
+### Code Documentation Composition
+
+- Code documentation follows the Rust documentation format (https://doc.rust-lang.org/reference/comments.html)
+- Code documentation is written in English
+- **Code documentation is mandatory before submitting a Pull Request**
+- Each public function should have a documentation comment
+
+## Code Conventions 📝
+
+### Variable Naming
+
+- Variable names are written in snake_case
+- Variable names are explicit
+- Variable names are in English
+- Use meaningful and descriptive names for variables
+
+### Function Naming
+
+- Function names are written in snake_case
+- Function names are explicit
+- Function names are in English
+- Function names should start with a verb (e.g., get_user, update_profile)
+
+## Commit and Pull Request Conventions 🔄
+
+- Commit messages are written in English
+- Commit messages follow the format: `type(scope): subject`
+
+- Pull requests are written in English
+- Pull requests follow the format: `type(scope): subject`
+- A pull request should not contain more than 500 lines of code
+- A pull request must include the progress made and any blocking points
+- A pull request should include screenshots of the developed feature (if applicable)
+- All tests must pass before a pull request can be merged
+
+### Commit Types and Pull Request Types
+
+- **feat**: Addition of a new feature ✨
+- **fix**: Bug fix 🐛
+- **docs**: Documentation modification 📝
+- **refactor**: Code modification without adding functionality or fixing a bug 🔧
+- **perf**: Code modification to improve performance ⚡
+- **test**: Addition or modification of tests 🧪
+- **build**: Build configuration modification 🏗️
+- **ci**: CI configuration modification 🔁
+- **chore**: Application configuration modification 🔧
+- **revert**: Revert of a previous commit ⏪
+
+### Commit Scopes and Pull Request Scopes
+
+- **database**: Database configuration modification 💾
+- **models**: Data model modification 📊
+- **services**: Service modification 🛠️
+- **utils**: Utility modification 🔧
+- **tests**: Test modification 🧪
+- **docs**: Documentation modification 📚
+- **config**: Application configuration modification ⚙️
+- **build**: Build configuration modification 🏗️
+- **ci**: CI configuration modification 🔁
+- **deps**: Dependency modification 📦
+- **other**: Other modification 🔄

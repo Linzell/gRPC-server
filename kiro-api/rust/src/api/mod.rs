@@ -1,4 +1,4 @@
-// lib.rs
+// api/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub use prost;
-
-#[cfg(feature = "api")]
-mod api;
-
 #[cfg(feature = "auth")]
-pub use api::auth;
+pub mod auth;
 #[cfg(feature = "client")]
-pub use api::client;
+pub mod client;
 #[cfg(feature = "api")]
-pub use api::common;
+pub mod common;
 #[cfg(feature = "api")]
-pub use api::google;
+pub mod google;
 #[cfg(feature = "group")]
-pub use api::group;
+pub mod group;

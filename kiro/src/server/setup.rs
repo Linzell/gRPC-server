@@ -20,6 +20,7 @@ use http::{
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     HeaderName, HeaderValue, Method,
 };
+use kiro_auth::{AuthService, AuthServiceServer};
 use std::io;
 use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -43,9 +44,10 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     // health_reporter
     //     .set_serving::<AdminServiceServer<AdminService>>()
     //     .await;
-    // health_reporter
-    //     .set_serving::<AuthServiceServer<AuthService>>()
-    //     .await;
+    #[cfg(feature = "auth")]
+    health_reporter
+        .set_serving::<AuthServiceServer<AuthService>>()
+        .await;
     // health_reporter
     //     .set_serving::<OrganizationServiceServer<OrganizationService>>()
     //     .await;
@@ -153,17 +155,9 @@ async fn setup_routes(
     routes_builder
         .add_service(reflection_service)
         .add_service(tonic_web::enable(health_service));
-    // .add_service(tonic_web::enable(ProjectService::build(db.clone())))
-    // .add_service(tonic_web::enable(OrganizationService::build(db.clone())))
-    // .add_service(tonic_web::enable(StoreService::build(db.clone())))
-    // .add_service(tonic_web::enable(UserService::build(db.clone())))
-    // .add_service(tonic_web::enable(AuthService::build(db.clone())))
-    // .add_service(tonic_web::enable(AdminService::build(db.clone())))
-    // .add_service(tonic_web::enable(SetupService::build(db.clone())))
-    // .add_service(tonic_web::enable(TicketingService::build(db.clone())))
-    // .add_service(tonic_web::enable(ModuleService::build(db.clone())))
-    // .add_service(tonic_web::enable(StripeService::build(db.clone())))
-    // .add_service(tonic_web::enable(StorageService::build().await));
+
+    #[cfg(feature = "auth")]
+    routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
 
     Ok(routes_builder)
 }

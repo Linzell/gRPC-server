@@ -1,6 +1,7 @@
-proto
-src/auth
-src/client
-src/common
-src/group
-src/project
+/proto
+
+src/api/auth
+src/api/client
+src/api/common
+src/api/group
+src/api/project

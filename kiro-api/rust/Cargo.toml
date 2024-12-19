@@ -6,12 +6,18 @@ authors = ["Charlie Cohen <linzellart@gmail.com>"]
 homepage = "https://github.com/Linzell/API-Client"
 license = "GNU AGPLv3"
 edition = "2021"
+build = "build.rs"
 publish = false
 
 [features]
 default = ["api", "json"]
 api = ["tonic/transport", "tonic-build/transport", "tokio"]
 json = ["pbjson", "pbjson-types", "serde"]
+
+auth = []
+client = []
+group = []
+
 postgres = ["dep:diesel"]
 surrealdb = []
 
