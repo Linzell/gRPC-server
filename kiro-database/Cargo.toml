@@ -1,0 +1,60 @@
+[package]
+name = "kiro_database"
+description = "The database client library"
+version = "0.0.2"
+authors = ["Charlie Cohen <linzellart@gmail.com>"]
+homepage = "https://github.com/Linzell/API-Client"
+license = "GNU AGPLv3"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["tracing"]
+
+postgres = ["dep:diesel", "dep:diesel_migrations"]
+surrealdb = ["dep:surrealdb", "dep:surrealdb-migrations"]
+
+[dependencies]
+# General dependencies
+chrono = { workspace = true, features = ["serde", "clock"] }
+serde = { workspace = true, features = ["derive"] }
+serde_derive = { workspace = true }
+serde_json = { workspace = true }
+
+# gRPC dependencies
+prost = { workspace = true }
+
+# Dependencies for the HTTP client
+async-trait = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
+
+# Dependencies for the gRPC server
+tonic = { workspace = true, default-features = false, features = [
+    "codegen",
+    "prost",
+] }
+
+# Dependencies for the error handling
+# log = { workspace = true }
+thiserror = { workspace = true }
+
+# Testing dependencies
+mockall = { workspace = true }
+
+# Optional dependencies
+## Dependencies for database backends
+diesel = { workspace = true, features = ["postgres_backend"], optional = true }
+diesel_migrations = { workspace = true, optional = true }
+surrealdb = { workspace = true, features = ["kv-mem", "jwks"], optional = true }
+surrealdb-migrations = { workspace = true, optional = true }
+
+# Optional dependencies
+## Dependencies for tracing
+tracing = { workspace = true, optional = true, features = ["log"] }
+
+[dev-dependencies]
+mockito = { version = "1.5.0" }

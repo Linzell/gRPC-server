@@ -1,4 +1,4 @@
-// utils/mod.rs
+// middleware/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,14 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
+/// # Auth Middleware
 ///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
+/// The auth module provides authentication middleware and session validation.
 #[cfg(feature = "auth")]
-pub mod grpc_utils;
+pub mod auth;
 
-/// # Telemetry
+/// # Logging Middleware
 ///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
+/// The logging module provides middleware for logging requests and responses.
+pub mod logging;

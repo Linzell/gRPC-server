@@ -1,0 +1,42 @@
+[package]
+name = "kiro_auth"
+description = "The authentication client library"
+version = "0.0.2"
+authors = ["Charlie Cohen <linzellart@gmail.com>"]
+homepage = "https://github.com/Linzell/API-Client"
+license = "GNU AGPLv3"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+
+mailer = []
+
+[dependencies]
+# General dependencies
+kiro_database = { workspace = true, features = ["surrealdb"] }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Dependencies for the HTTP client
+tokio = { workspace = true, features = ["full"] }
+
+# Dependencies for the gRPC server
+tonic = { workspace = true }
+
+# Dependencies for the error handling
+thiserror = { workspace = true }
+
+# Testing dependencies
+mockall = { workspace = true }
+
+# Optional dependencies
+## Mailer dependencies
+# kiro_mailer = { workspace = true, features = ["mock"], optional = true }
+
+[dev-dependencies]
+mockito = { version = "1.5.0" }

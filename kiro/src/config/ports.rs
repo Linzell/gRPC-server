@@ -1,4 +1,4 @@
-// utils/mod.rs
+// config/ports.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,14 +14,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
-///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
-#[cfg(feature = "auth")]
-pub mod grpc_utils;
+use kiro_database::get_env_or;
 
-/// # Telemetry
-///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
+use crate::error::ServerError;
+
+/// Network port configuration
+#[derive(Debug, Clone, Copy)]
+pub struct Ports {
+    pub http: u16,
+    pub https: u16,
+}
+
+impl Ports {
+    pub(crate) fn init() -> Result<Self, ServerError> {
+        Ok(Self {
+            http: get_env_or("HTTP_PORT", "3080").parse()?,
+            https: get_env_or("HTTPS_PORT", "3000").parse()?,
+        })
+    }
+
+    /// Get the HTTP port
+    pub fn http(&self) -> u16 {
+        self.http
+    }
+
+    /// Get the HTTPS port
+    pub fn https(&self) -> u16 {
+        self.https
+    }
+}

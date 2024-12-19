@@ -14,14 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
+/// # Env
 ///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
-#[cfg(feature = "auth")]
-pub mod grpc_utils;
-
-/// # Telemetry
-///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
+/// The env module is a module that provides utilities for environment variables.
+pub mod env;

@@ -1,4 +1,4 @@
-// utils/mod.rs
+// models/session/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,14 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
-///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
-#[cfg(feature = "auth")]
-pub mod grpc_utils;
+mod session_model;
 
-/// # Telemetry
+/// # Session Store
 ///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
+/// The session store provides functionality for storing sessions.
+pub use session_model::SessionStore;
+
+/// # Session Model
+///
+/// The session model provides a model for sessions.
+pub use session_model::SessionModel;
+
+/// # Create Session Model
+///
+/// The create session model provides a model for creating sessions.
+pub use session_model::CreateSessionModel;

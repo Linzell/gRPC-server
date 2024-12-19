@@ -1,4 +1,4 @@
-// utils/mod.rs
+// src/server/health.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,14 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
-///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
-#[cfg(feature = "auth")]
-pub mod grpc_utils;
+use axum::{http::StatusCode, response::IntoResponse};
 
-/// # Telemetry
-///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
+/// Health check handler
+pub async fn health_check() -> impl IntoResponse {
+    (StatusCode::OK, "OK")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+
+    #[tokio::test]
+    async fn test_health_check() {
+        let response = health_check().await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}
