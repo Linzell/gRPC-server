@@ -22,11 +22,11 @@ mod db_types;
 #[cfg(feature = "surrealdb")]
 pub mod surrealdb_repo;
 
-/// # Postgres Repository
-///
-/// The Postgres Repository module is a module that provides utilities for the Postgres repository.
-#[cfg(feature = "postgres")]
-pub mod postgres_repo;
+// /// # Postgres Repository
+// ///
+// /// The Postgres Repository module is a module that provides utilities for the Postgres repository.
+// #[cfg(feature = "postgres")]
+// pub mod postgres_repo;
 
 /// # Database Bridge
 ///
