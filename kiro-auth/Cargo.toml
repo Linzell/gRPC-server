@@ -35,10 +35,10 @@ base64 = { version = "0.21.0" }
 rand = { workspace = true }
 rand_core = { version = "0.6.4", features = ["std"] }
 
-# Dependencies for the HTTP client
+# Dependencies for the server
+axum = { workspace = true, features = ["json"] }
+http = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-
-# Dependencies for the gRPC server
 tonic = { workspace = true }
 
 # Dependencies for the error handling

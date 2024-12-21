@@ -1,7 +1,5 @@
 .PHONY: proto test
 
-all: proto test-all
-
 proto:
 	rm -rf proto
 	mkdir -p proto

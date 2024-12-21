@@ -54,7 +54,7 @@ use crate::{
 /// let session = response.into_inner();
 /// ```
 pub async fn login(
-    service: &AuthService, request: Request<LoginRequest>,
+    service: &AuthService, request: Request<AuthRequest>,
 ) -> Result<Response<Session>, Status> {
     // Extract IP address from request metadata
     let ip_address = get_ip_from_md(request.metadata()).unwrap_or_else(|| "unknown".to_string());
@@ -106,19 +106,29 @@ mod tests {
     use super::*;
 
     use crate::{CreateSessionModel, SessionModel};
+    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
     use chrono::Utc;
     use kiro_client::{
         Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
     };
-    use kiro_database::{db_bridge::MockDatabaseOperations, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
     use mockall::predicate::{always, eq};
+    use rand_core::OsRng;
 
     fn create_test_user() -> UserModel {
+        // Create a proper password hash for testing
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password("Password123!".as_bytes(), &salt)
+            .unwrap()
+            .to_string();
+
         UserModel {
             id: DbId::from(("users", "123")),
             customer_id: Some("cust_123".to_string()),
             email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
+            password_hash,
             avatar: Some("avatar.jpg".to_string()),
             settings: UserSettings {
                 language: Some(Language::English),
@@ -160,38 +170,28 @@ mod tests {
     #[tokio::test]
     async fn test_login_success() {
         let mut mock_db = MockDatabaseOperations::new();
+        let test_user = create_test_user();
 
         mock_db
             .expect_read_by_field::<UserModel>()
             .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
             .times(1)
-            .returning(|_, _, _, _| Ok(vec![create_test_user()]));
-
-        mock_db
-            .expect_query::<bool>()
-            .times(1)
-            .returning(|_, _| Ok(vec![true]));
+            .returning(move |_, _, _, _| Ok(vec![test_user.clone()]));
 
         mock_db
             .expect_read_by_field_thing::<SessionModel>()
             .with(
                 eq("sessions"),
                 eq("user_id"),
-                eq(DbId::from(("users", "1"))),
+                eq(DbId::from(("users", "123"))),
                 eq(None),
             )
             .times(1)
             .returning(|_, _, _, _| Ok(vec![]));
 
-        mock_db
-            .expect_query::<String>()
-            .with(eq("RETURN crypto::sha256(rand::string(50));"), eq(None))
-            .times(1)
-            .returning(|_, _| Ok(vec!["session_token".to_string()]));
-
         let session = create_test_session();
         mock_db
-            .expect_create::<SessionModel, SessionModel>()
+            .expect_create::<CreateSessionModel, SessionModel>()
             .with(eq("sessions"), always())
             .times(1)
             .return_once(move |_, _| Ok(vec![session]));
@@ -200,14 +200,15 @@ mod tests {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
             password: "Password123!".to_string(),
         });
 
         let response = login(&service, request).await.unwrap().into_inner();
-        assert_eq!(response.token, "session_token");
-        assert!(!response.expire_date.is_none());
+
+        assert!(!response.token.is_empty());
+        assert!(response.expire_date.is_some());
     }
 
     #[tokio::test]
@@ -216,24 +217,17 @@ mod tests {
 
         mock_db
             .expect_read_by_field::<UserModel>()
-            .withf(|collection, field, value, _| {
-                collection == "users" && field == "email" && value == "test@example.com"
-            })
+            .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
             .times(1)
             .returning(|_, _, _, _| Ok(vec![create_test_user()]));
-
-        mock_db
-            .expect_query::<bool>()
-            .times(1)
-            .returning(|_, _| Ok(vec![false]));
 
         let service = AuthService {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
-            password: "Password123!".to_string(),
+            password: "WrongPassword123!".to_string(),
         });
 
         let error = login(&service, request).await.unwrap_err();
@@ -257,7 +251,7 @@ mod tests {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "nonexistent@example.com".to_string(),
             password: "Password123!".to_string(),
         });
@@ -283,7 +277,7 @@ mod tests {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
             password: "Password123!".to_string(),
         });
@@ -299,7 +293,7 @@ mod tests {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
             password: "short".to_string(),
         });
@@ -320,33 +314,16 @@ mod tests {
             .returning(|_, _, _, _| Ok(vec![create_test_user()]));
 
         mock_db
-            .expect_query::<bool>()
-            .times(1)
-            .returning(|_, _| Ok(vec![true]));
-
-        mock_db
             .expect_read_by_field_thing::<SessionModel>()
             .with(
                 eq("sessions"),
                 eq("user_id"),
-                eq(DbId::from(("users", "1"))),
+                eq(DbId::from(("users", "123"))),
                 eq(None),
             )
             .times(1)
-            .returning(|_, _, _, _| Ok(vec![]));
-
-        mock_db
-            .expect_query::<String>()
-            .with(eq("RETURN crypto::sha256(rand::string(50));"), eq(None))
-            .times(1)
-            .returning(|_, _| Ok(vec!["session_token".to_string()]));
-
-        mock_db
-            .expect_create::<CreateSessionModel, SessionModel>()
-            .with(eq("sessions"), always())
-            .times(1)
-            .return_once(|_, _| {
-                Err(kiro_database::DatabaseError::Internal(
+            .returning(|_, _, _, _| {
+                Err(DatabaseError::Internal(
                     "Session creation failed".to_string(),
                 ))
             });
@@ -355,7 +332,7 @@ mod tests {
             db: Database::Mock(mock_db),
         };
 
-        let request = Request::new(LoginRequest {
+        let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
             password: "Password123!".to_string(),
         });

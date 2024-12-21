@@ -50,7 +50,7 @@ pub type DatabaseStream<T> = Pin<Box<dyn Stream<Item = Result<T, DatabaseError>>
 
 pub type QueryBindings = serde_json::Value;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Database {
     #[cfg(feature = "surrealdb")]
     Surreal(Surreal<Any>),

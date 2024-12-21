@@ -13,3 +13,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+use axum::{
+    routing::{get, post},
+    Router,
+};
+use kiro_database::db_bridge::Database;
+
+mod login;
+// mod logout;
+// mod register;
+
+use crate::AuthService;
+
+pub fn auth_routes(db: Database) -> Router {
+    let service = AuthService::new(db);
+
+    Router::new()
+        .route("/login", post(login::login))
+        .route("/logout", get(unimplemented!()))
+        .route("/register", post(unimplemented!()))
+        .with_state(service)
+}

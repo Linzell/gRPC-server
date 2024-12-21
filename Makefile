@@ -29,7 +29,7 @@ dev:
 test:
 	@echo "Running quality checks across all crates..."
 	@echo "Running tests..."
-	cd kiro-api && $(MAKE) make
+	cd kiro-api && $(MAKE) test
 	cd kiro && $(MAKE) test
 	cd kiro-auth && $(MAKE) test
 	cd kiro-client && $(MAKE) test
@@ -41,7 +41,7 @@ test:
 test-all:
 	@echo "Running quality checks across all crates..."
 	@echo "Running tests..."
-	cd kiro-api && $(MAKE) all
+	cd kiro-api && $(MAKE) test-all
 	cd kiro && $(MAKE) test-all
 	cd kiro-auth && $(MAKE) test-all
 	cd kiro-client && $(MAKE) test-all

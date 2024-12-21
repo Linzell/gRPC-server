@@ -1,9 +1,10 @@
 .PHONY: rust
 
-all: rust
-
 rust:
 	cd rust && make
 
-all:
-	cd rust && make all
+test:
+	cd rust && make test
+
+test-all:
+	cd rust && make test-all

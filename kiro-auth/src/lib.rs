@@ -35,6 +35,12 @@ pub use models::{CreateSessionModel, SessionModel};
 #[cfg(feature = "services")]
 pub use services::AuthService;
 
+/// # Auth HTTP1 Routes
+///
+/// The auth module provides HTTP1 routes for the authentication service.
+#[cfg(feature = "services")]
+pub use http::auth_routes;
+
 /// # Auth Server Builder
 ///
 /// The auth module provides a builder for the authentication server.

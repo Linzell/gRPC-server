@@ -166,21 +166,18 @@ pub struct UserModel {
 /// # Fields
 /// - `email`: User's email address
 /// - `password_hash`: Hashed password for authentication
-/// - `groups`: Initial group memberships
 ///
 /// # Example
 /// ```rust
 /// let new_user = CreateUserModel {
 ///     email: "new@example.com".to_string(),
 ///     password_hash: "secure_hash".to_string(),
-///     groups: vec![group_id],
 /// };
 /// ```
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateUserModel {
     pub email: String,
     pub password_hash: String,
-    pub groups: Vec<DbId>,
 }
 
 impl HasId for UserModel {

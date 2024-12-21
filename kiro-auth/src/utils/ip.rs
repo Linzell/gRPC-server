@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 /// Extracts IP address from request metadata
 ///
 /// # Arguments
@@ -54,9 +56,81 @@ pub fn get_ip_from_md(metadata: &tonic::metadata::MetadataMap) -> Option<String>
     None
 }
 
+/// Extracts IP address from request http1 headers
+///
+/// # Arguments
+/// * `headers` - Request headers containing client information
+///
+/// # Returns
+/// * `Option<String>` - IP address if found, None otherwise
+///
+/// # Example
+/// ```
+/// let ip = get_ip_from_headers(headers).unwrap_or_else(|| "unknown".to_string());
+/// ```
+pub fn get_ip_from_headers(headers: &http::HeaderMap) -> Option<String> {
+    // Helper function to validate IP address
+    fn validate_ip(ip_str: &str) -> Option<String> {
+        ip_str
+            .parse::<IpAddr>()
+            .ok()
+            .filter(|ip| !ip.is_loopback() && !ip.is_unspecified())
+            .map(|ip| ip.to_string())
+    }
+
+    // Helper function to extract first IP from comma-separated list
+    fn extract_first_ip(header_value: &str) -> Option<String> {
+        header_value
+            .split(',')
+            .next()
+            .map(str::trim)
+            .and_then(validate_ip)
+    }
+
+    // Try X-Forwarded-For header (most common for proxied requests)
+    if let Some(forwarded) = headers.get("x-forwarded-for").and_then(|h| h.to_str().ok()) {
+        if let Some(ip) = extract_first_ip(forwarded) {
+            return Some(ip);
+        }
+    }
+
+    // Try X-Real-IP header (common in Nginx)
+    if let Some(real_ip) = headers.get("x-real-ip").and_then(|h| h.to_str().ok()) {
+        if let Some(ip) = validate_ip(real_ip.trim()) {
+            return Some(ip);
+        }
+    }
+
+    // Try True-Client-IP header (Cloudflare and some CDNs)
+    if let Some(true_ip) = headers.get("true-client-ip").and_then(|h| h.to_str().ok()) {
+        if let Some(ip) = validate_ip(true_ip.trim()) {
+            return Some(ip);
+        }
+    }
+
+    // Try CF-Connecting-IP header (Cloudflare specific)
+    if let Some(cf_ip) = headers
+        .get("cf-connecting-ip")
+        .and_then(|h| h.to_str().ok())
+    {
+        if let Some(ip) = validate_ip(cf_ip.trim()) {
+            return Some(ip);
+        }
+    }
+
+    // Fallback to X-Peer-Addr header
+    headers
+        .get("x-peer-addr")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|addr| addr.split(':').next())
+        .map(str::trim)
+        .and_then(validate_ip)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use http::HeaderMap;
     use tonic::metadata::MetadataMap;
 
     #[test]
@@ -83,5 +157,50 @@ mod tests {
         // Test no IP headers
         metadata.clear();
         assert_eq!(get_ip_from_md(&metadata), None);
+    }
+
+    #[test]
+    fn test_valid_ipv4() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-for", "203.0.113.195".parse().unwrap());
+        assert_eq!(
+            get_ip_from_headers(&headers),
+            Some("203.0.113.195".to_string())
+        );
+    }
+
+    #[test]
+    fn test_valid_ipv6() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-for",
+            "2001:db8:85a3:8d3:1319:8a2e:370:7348".parse().unwrap(),
+        );
+        assert_eq!(
+            get_ip_from_headers(&headers),
+            Some("2001:db8:85a3:8d3:1319:8a2e:370:7348".to_string())
+        );
+    }
+
+    #[test]
+    fn test_invalid_ip() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-forwarded-for", "invalid-ip".parse().unwrap());
+        assert_eq!(get_ip_from_headers(&headers), None);
+    }
+
+    #[test]
+    fn test_multiple_ips() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-forwarded-for",
+            "203.0.113.195, 70.41.3.18, 150.172.238.178"
+                .parse()
+                .unwrap(),
+        );
+        assert_eq!(
+            get_ip_from_headers(&headers),
+            Some("203.0.113.195".to_string())
+        );
     }
 }
