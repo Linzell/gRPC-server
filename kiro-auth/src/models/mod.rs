@@ -16,12 +16,7 @@
 
 mod session_model;
 
-/// # Session Store
+/// # Session Models
 ///
-/// The session store provides functionality for storing sessions.
-pub use session_model::SessionStore;
-
-/// # Session Model
-///
-/// The session model provides a model for sessions.
-pub use session_model::SessionModel;
+/// The session model provides models for authentication.
+pub use session_model::{CreateSessionModel, SessionModel, SessionStore};

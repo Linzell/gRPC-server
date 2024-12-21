@@ -20,13 +20,19 @@ use http::{
     header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     HeaderName, HeaderValue, Method,
 };
-use kiro_auth::{AuthService, AuthServiceServer};
 use std::io;
 use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[cfg(feature = "auth")]
+use kiro_auth::{AuthService, AuthServiceServer};
+#[cfg(feature = "client")]
+use kiro_client::{ClientService, ClientServiceServer};
+
+#[cfg(feature = "auth")]
 use crate::middleware::auth::auth_layer;
+#[cfg(feature = "client")]
+use crate::middleware::client::ClientService;
 #[cfg(feature = "tracing")]
 use crate::middleware::logging::trace_layer;
 
@@ -36,7 +42,10 @@ pub async fn create_tls_config() -> Result<RustlsConfig, io::Error> {
     let cert = tokio::fs::read("certs/cert.pem").await?;
     let key = tokio::fs::read("certs/key.pem").await?;
     let config = RustlsConfig::from_pem(cert, key).await?;
+
+    #[cfg(feature = "tracing")]
     tracing::info!("🔐 TLS configuration loaded");
+
     Ok(config)
 }
 
@@ -47,6 +56,10 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     #[cfg(feature = "auth")]
     health_reporter
         .set_serving::<AuthServiceServer<AuthService>>()
+        .await;
+    #[cfg(feature = "client")]
+    health_reporter
+        .set_serving::<ClientServiceServer<ClientService>>()
         .await;
     // health_reporter
     //     .set_serving::<OrganizationServiceServer<OrganizationService>>()
@@ -75,6 +88,8 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     // health_reporter
     //     .set_serving::<StorageServiceServer<StorageService>>()
     //     .await;
+
+    #[cfg(feature = "tracing")]
     tracing::info!("🫀 Health service is running");
 }
 
@@ -148,6 +163,8 @@ async fn setup_routes(
     setup_health_reporter(&mut health_reporter).await;
 
     let reflection_service = crate::server::reflection::setup_reflection_service();
+
+    #[cfg(feature = "tracing")]
     tracing::info!("🪞 Reflection service is running");
 
     let mut routes_builder = tonic::service::Routes::builder();
@@ -158,6 +175,9 @@ async fn setup_routes(
 
     #[cfg(feature = "auth")]
     routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
+
+    #[cfg(feature = "client")]
+    routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));
 
     Ok(routes_builder)
 }

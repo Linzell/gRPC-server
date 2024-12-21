@@ -93,7 +93,6 @@ impl GrpcMakeSpan {
         let parts: Vec<&str> = path.split('/').collect();
 
         match parts.as_slice() {
-            // Handle paths like "digitalkin.payment.v1.StripeService/ReadSubscriptions"
             [service_path, method_name] => {
                 let service_parts: Vec<&str> = service_path.split('.').collect();
                 let service_name = service_parts
@@ -401,8 +400,8 @@ mod tests {
     #[test]
     fn test_extract_service_info_standard_path() {
         let span_maker = GrpcMakeSpan::new();
-        let (service, method) = span_maker
-            .extract_service_info("digitalkin.payment.v1.StripeService/ReadSubscriptions");
+        let (service, method) =
+            span_maker.extract_service_info("payment.v1.StripeService/ReadSubscriptions");
         assert_eq!(service, "Stripe");
         assert_eq!(method, "ReadSubscriptions");
     }

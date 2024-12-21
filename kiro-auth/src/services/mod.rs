@@ -25,7 +25,7 @@ use kiro_api::{
 };
 use kiro_database::db_bridge::Database;
 
-// mod login;
+mod login;
 // mod logout;
 // mod register;
 
@@ -46,9 +46,8 @@ impl AuthService {
 
 #[async_trait]
 impl auth_service_server::AuthService for AuthService {
-    async fn login(&self, _request: Request<LoginRequest>) -> Result<Response<Session>, Status> {
-        // login::login(self, request).await
-        unimplemented!()
+    async fn login(&self, request: Request<LoginRequest>) -> Result<Response<Session>, Status> {
+        login::login(self, request).await
     }
 
     async fn logout(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {

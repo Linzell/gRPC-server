@@ -58,6 +58,12 @@ pub enum SessionError {
     #[error("{0} is not a recipient")]
     InvalidAddress(String),
 
+    #[error("Encrypted data is invalid")]
+    EncryptionError,
+
+    #[error("Decrypted data is invalid")]
+    DecryptionError,
+
     #[cfg(feature = "mailer")]
     #[error(transparent)]
     Mailer(#[from] lettre::error::Error),
@@ -103,6 +109,8 @@ impl From<SessionError> for Status {
                 Status::internal("Failed to send new connection email")
             }
             SessionError::InvalidAddress(e) => Status::invalid_argument(e),
+            SessionError::EncryptionError => Status::internal("Encrypted data is invalid"),
+            SessionError::DecryptionError => Status::internal("Decrypted data is invalid"),
             #[cfg(feature = "mailer")]
             SessionError::Mailer(e) => Status::internal(e.to_string()),
             #[cfg(feature = "mailer")]

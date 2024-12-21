@@ -1,6 +1,6 @@
 [package]
-name = "kiro_auth"
-description = "The authentication client library"
+name = "kiro_client"
+description = "The client for the kiro library"
 version = "0.0.2"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
 homepage = "https://github.com/Linzell/API-Client"
@@ -14,8 +14,9 @@ publish = false
 default = ["tracing"]
 
 models = []
-services = ["models", "kiro_client/models"]
-mailer = []
+services = ["models"]
+# email = ["kiro_mailer"]
+# storage = ["dk_storage"]
 
 tracing = ["dep:tracing"]
 
@@ -26,12 +27,6 @@ kiro_database = { workspace = true, features = ["surrealdb"] }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-
-# Crypto dependencies
-once_cell = { version = "1.20.2" }
-aes-gcm = { version = "0.10.1" }
-base64 = { version = "0.21.0" }
-rand = { workspace = true }
 
 # Dependencies for the HTTP client
 tokio = { workspace = true, features = ["full"] }
@@ -46,12 +41,12 @@ thiserror = { workspace = true }
 mockall = { workspace = true }
 
 # Optional dependencies
-## Client dependencies
-kiro_client = { workspace = true, optional = true }
-
-# Optional dependencies
 ## Mailer dependencies
 # kiro_mailer = { workspace = true, features = ["mock"], optional = true }
+
+# Optional dependencies
+## Storage dependencies
+# dk_storage = { workspace = true, features = ["mock"], optional = true }
 
 # Optional dependencies
 ## Dependencies for tracing

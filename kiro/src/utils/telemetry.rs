@@ -89,7 +89,7 @@ pub fn init_tracer() -> Result<(), ServerError> {
                 .with_resource(opentelemetry_sdk::Resource::new(vec![
                     opentelemetry::KeyValue::new(
                         "service.name",
-                        format!("digitalkin/api-client-{}", get_env_or("ENVIRONMENT", "PRD")),
+                        format!("kiro/api-client-{}", get_env_or("ENVIRONMENT", "DEV")),
                     ),
                     opentelemetry::KeyValue::new("service.version", version!("v")),
                 ])),
@@ -101,7 +101,7 @@ pub fn init_tracer() -> Result<(), ServerError> {
     tracing::trace!(target: "relay", "✅ Successfully initialized trace provider on tokio runtime");
 
     let filter = filter::Targets::new()
-        .with_target("digitalkin", Level::from_str("INFO").unwrap())
+        .with_target("kiro", Level::from_str("INFO").unwrap())
         .with_default(Level::INFO);
 
     let dispatch: Dispatch = tracing_subscriber::registry()

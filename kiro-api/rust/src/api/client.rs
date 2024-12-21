@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub const CLIENT_V1_FILE_DESCRIPTOR_SET: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/client/proto_descriptor_v1.bin"));
+
 pub mod v1 {
     include!(concat!(env!("OUT_DIR"), "/client/client.v1.rs"));
     #[cfg(feature = "json")]

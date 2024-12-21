@@ -16,7 +16,7 @@
 
 #[cfg(feature = "auth")]
 pub mod auth;
-#[cfg(feature = "client")]
+#[cfg(any(feature = "auth", feature = "client"))]
 pub mod client;
 #[cfg(feature = "api")]
 pub mod common;

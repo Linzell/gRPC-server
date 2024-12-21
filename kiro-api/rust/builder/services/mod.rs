@@ -16,15 +16,18 @@
 
 #[cfg(feature = "auth")]
 mod auth;
-#[cfg(feature = "auth")]
-pub use auth::build_auth_service;
-
+#[cfg(any(feature = "auth", feature = "client"))]
+mod client;
 // #[cfg(feature = "group")]
 // mod group;
-// #[cfg(feature = "group")]
-// pub use group::build_group_service;
-
 // #[cfg(feature = "project")]
 // mod project;
+
+#[cfg(feature = "auth")]
+pub use auth::build_auth_service;
+#[cfg(any(feature = "auth", feature = "client"))]
+pub use client::build_client_service;
+// #[cfg(feature = "group")]
+// pub use group::build_group_service;
 // #[cfg(feature = "project")]
 // pub use project::build_project_service;

@@ -21,7 +21,7 @@ mod api;
 
 #[cfg(feature = "auth")]
 pub use api::auth;
-#[cfg(feature = "client")]
+#[cfg(any(feature = "auth", feature = "client"))]
 pub use api::client;
 #[cfg(feature = "api")]
 pub use api::common;

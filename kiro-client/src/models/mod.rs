@@ -1,4 +1,5 @@
-// proto/mod.rs
+// models/mod.rs
+//
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
 // Licensed under the GNU General Public License, Version 3.0 (the "License");
@@ -13,21 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "api")]
-mod common;
-#[cfg(feature = "api")]
-mod google;
-mod services;
+mod user_model;
 
-#[cfg(feature = "api")]
-pub use common::build_common_protos;
-#[cfg(feature = "api")]
-pub use google::build_google_protos;
-#[cfg(feature = "auth")]
-pub use services::build_auth_service;
-#[cfg(any(feature = "auth", feature = "client"))]
-pub use services::build_client_service;
-// #[cfg(feature = "group")]
-// pub use services::build_group_service;
-// #[cfg(feature = "project")]
-// pub use services::build_project_service;
+/// # User Models
+///
+/// The user model provides models for users.
+pub use user_model::{
+    CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
+    UserModel, UserSettings,
+};

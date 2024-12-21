@@ -53,7 +53,14 @@ pub async fn shutdown_signal(
         signal = terminate => signal,
     };
 
+    #[cfg(feature = "tracing")]
     tracing::info!(
+        "🛑 Received {} signal, initiating graceful shutdown",
+        signal_type
+    );
+
+    #[cfg(not(feature = "tracing"))]
+    println!(
         "🛑 Received {} signal, initiating graceful shutdown",
         signal_type
     );
@@ -80,7 +87,11 @@ pub async fn shutdown_signal(
 
         // Send shutdown notification email
         if let Err(e) = error_mailer.send_error_notification(&context).await {
+            #[cfg(feature = "tracing")]
             tracing::error!("Failed to send shutdown notification email: {}", e);
+
+            #[cfg(not(feature = "tracing"))]
+            eprintln!("Failed to send shutdown notification email: {}", e);
         }
     }
 
@@ -88,5 +99,6 @@ pub async fn shutdown_signal(
     handle.graceful_shutdown(Some(Duration::from_secs(10)));
 
     // Log final shutdown message
+    #[cfg(feature = "tracing")]
     tracing::info!("👋 Server started graceful shutdown");
 }

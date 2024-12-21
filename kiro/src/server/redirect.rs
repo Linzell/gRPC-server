@@ -33,7 +33,10 @@ where
             ports.https(),
             uri.path_and_query().map_or("", |x| x.as_str())
         );
+
+        #[cfg(feature = "tracing")]
         tracing::debug!("Redirecting {} to {}", uri, https_uri);
+
         Redirect::permanent(&https_uri)
     }
 
@@ -42,14 +45,27 @@ where
     let addr = SocketAddr::from(([0, 0, 0, 0], ports.http()));
     match tokio::net::TcpListener::bind(addr).await {
         Ok(listener) => {
+            #[cfg(feature = "tracing")]
             tracing::info!("🔄 HTTP redirect server listening on {}", addr);
+
+            #[cfg(not(feature = "tracing"))]
+            println!("🔄 HTTP redirect server listening on {}", addr);
+
             axum::serve(listener, app.into_make_service())
                 .with_graceful_shutdown(signal)
                 .await
                 .unwrap_or_else(|e| tracing::error!("HTTP redirect server error: {}", e));
         }
         Err(e) => {
+            #[cfg(feature = "tracing")]
             tracing::error!(
+                "Failed to start HTTP redirect server on port {}: {}",
+                ports.http(),
+                e
+            );
+
+            #[cfg(not(feature = "tracing"))]
+            eprintln!(
                 "Failed to start HTTP redirect server on port {}: {}",
                 ports.http(),
                 e

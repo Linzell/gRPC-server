@@ -36,8 +36,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build service protos
     #[cfg(feature = "auth")]
     builder::build_auth_service(&out_dir, &proto_dir, &proto_dir)?;
-    // #[cfg(feature = "client")]
-    // builder::build_client_service(&out_dir, &proto_dir, &proto_dir)?;
+    #[cfg(feature = "auth")]
+    builder::build_client_service(&out_dir, &proto_dir, &proto_dir)?;
     // #[cfg(feature = "group")]
     // builder::build_group_service(&out_dir, &proto_dir, &proto_dir)?;
 

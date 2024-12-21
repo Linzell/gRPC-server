@@ -15,34 +15,26 @@
 // limitations under the License.
 
 mod error;
-#[cfg(feature = "services")]
-mod http;
 #[cfg(feature = "models")]
 mod models;
-#[cfg(feature = "services")]
-mod services;
-mod utils;
 
-/// # Session Models
+/// # User Models
 ///
-/// The session module provides models for authentication.
+/// The user module provides models for users.
 #[cfg(feature = "models")]
-pub use models::{CreateSessionModel, SessionModel, SessionStore};
+pub use models::{
+    CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
+    UserModel, UserSettings,
+};
 
-/// # Auth Services
+/// # Client Server Builder
 ///
-/// The auth module provides services for authentication.
-#[cfg(feature = "models")]
-pub use services::AuthService;
-
-/// # Auth Server Builder
-///
-/// The auth module provides a builder for the authentication server.
+/// The client module provides a builder for the client server.
 #[cfg(feature = "services")]
-pub use kiro_api::auth::v1::auth_service_server::AuthServiceServer;
+pub use kiro_api::client::v1::client_service_server::ClientServiceServer;
 
-/// # Auth File Descriptor Set
+/// # User File Descriptor Set
 ///
-/// The auth module provides the file descriptor set for the authentication service.
+/// The user module provides the file descriptor set for the user service.
 #[cfg(feature = "services")]
-pub use kiro_api::auth::AUTH_V1_FILE_DESCRIPTOR_SET;
+pub use kiro_api::client::CLIENT_V1_FILE_DESCRIPTOR_SET;
