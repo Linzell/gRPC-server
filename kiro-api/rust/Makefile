@@ -1,6 +1,6 @@
 .PHONY: proto test
 
-all: proto test
+all: proto test-all
 
 proto:
 	rm -rf proto
@@ -10,7 +10,9 @@ proto:
 test:
 	cargo fmt --check
 	cargo clippy --no-deps
-	cargo test
+	TZ=UTC cargo test
 
-publish:
-	cargo publish
+test-all:
+	cargo fmt --check
+	cargo clippy --no-deps
+	TZ=UTC cargo test --all-features -- --nocapture

@@ -3,4 +3,7 @@
 all: rust
 
 rust:
-		cd rust && make
+	cd rust && make
+
+all:
+	cd rust && make all

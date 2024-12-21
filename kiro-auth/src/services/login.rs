@@ -22,7 +22,7 @@ use tonic::{Request, Response, Status};
 
 use crate::{
     utils::{ip::get_ip_from_md, password::valid_password},
-    SessionStore,
+    SessionModel,
 };
 
 /// Login service implementation
@@ -72,7 +72,7 @@ pub async fn login(
         .map_err(|e| Status::not_found(format!("User not found: {}", e)))?;
 
     // Verify password
-    let verified = SessionStore::verify_password(&service.db, request.password, user.password_hash)
+    let verified = SessionModel::verify_password(request.password, user.password_hash)
         .await
         .map_err(|e| Status::internal(format!("Password verification error: {}", e)))?;
 
@@ -81,12 +81,12 @@ pub async fn login(
     }
 
     // Create or get existing session
-    let session = SessionStore::get_session_by_user_id(&service.db, user.id.clone(), ip_address)
+    let session = SessionModel::get_session_by_user_id(&service.db, user.id.clone(), ip_address)
         .await
         .map_err(|e| Status::internal(format!("Session creation failed: {}", e)))?;
 
     // Generate refresh token
-    let refresh_token = SessionStore::generate_refresh_token(session.user_id)
+    let refresh_token = SessionModel::generate_refresh_token(session.user_id)
         .await
         .map_err(|e| Status::internal(format!("Refresh token generation failed: {}", e)))?;
 

@@ -27,12 +27,12 @@ mod utils;
 ///
 /// The session module provides models for authentication.
 #[cfg(feature = "models")]
-pub use models::{CreateSessionModel, SessionModel, SessionStore};
+pub use models::{CreateSessionModel, SessionModel};
 
 /// # Auth Services
 ///
 /// The auth module provides services for authentication.
-#[cfg(feature = "models")]
+#[cfg(feature = "services")]
 pub use services::AuthService;
 
 /// # Auth Server Builder

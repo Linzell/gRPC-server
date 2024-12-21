@@ -1,4 +1,4 @@
-// models/session/mod.rs
+// models/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -19,4 +19,4 @@ mod session_model;
 /// # Session Models
 ///
 /// The session model provides models for authentication.
-pub use session_model::{CreateSessionModel, SessionModel, SessionStore};
+pub use session_model::{CreateSessionModel, SessionModel};

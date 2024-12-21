@@ -18,6 +18,7 @@ use aes_gcm::{
     aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
 };
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use base64::{engine::general_purpose::URL_SAFE, Engine};
 use chrono::Utc;
 use kiro_database::{
@@ -26,6 +27,7 @@ use kiro_database::{
 };
 use once_cell::sync::Lazy;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "mailer")]
@@ -89,11 +91,6 @@ pub struct CreateSessionModel {
     pub ip_address: Option<String>,
 }
 
-/// # Session store struct
-///
-/// The session store struct is a struct that represents a session store.
-pub struct SessionStore {}
-
 impl HasId for SessionModel {
     type Id = DbId;
     fn id(&self) -> &Self::Id {
@@ -101,7 +98,7 @@ impl HasId for SessionModel {
     }
 }
 
-impl SessionStore {
+impl SessionModel {
     /// # Check if session is expired
     ///
     /// The `is_expired` method checks if a session is expired.
@@ -351,24 +348,14 @@ impl SessionStore {
     /// let password_hash = SessionStore::create_password_hash(db.clone(), password).await?;
     ///
     /// prin
-    pub async fn create_password_hash<DB: DatabaseOperations + Send + Sync>(
-        db: &DB, password: String,
-    ) -> Result<String, SessionError> {
-        let bindings = serde_json::json!({
-            "password": password
-        });
+    pub async fn create_password_hash(password: String) -> Result<String, SessionError> {
+        let argon2 = Argon2::default();
+        let salt = SaltString::generate(&mut OsRng);
 
-        db.query::<String>(
-            "RETURN crypto::argon2::generate($password);",
-            Some(bindings),
-        )
-        .await
-        .map_err(SessionError::Database)
-        .and_then(|res| {
-            res.first()
-                .cloned()
-                .ok_or(SessionError::PasswordHashingFailed)
-        })
+        argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map(|hash| hash.to_string())
+            .map_err(|_| SessionError::PasswordHashingFailed)
     }
 
     /// # Verify password
@@ -382,21 +369,18 @@ impl SessionStore {
     ///
     /// println!("🔒 Password is valid: {:?}", is_valid);
     /// ```
-    pub async fn verify_password<DB: DatabaseOperations + Send + Sync>(
-        db: &DB, password: String, password_hash: String,
+    pub async fn verify_password(
+        password: String, password_hash: String,
     ) -> Result<bool, SessionError> {
-        let bindings = serde_json::json!({
-            "password_hash": password_hash,
-            "password": password
-        });
+        let argon2 = Argon2::default();
 
-        db.query::<bool>(
-            "RETURN crypto::argon2::compare($password_hash, $password);",
-            Some(bindings),
-        )
-        .await
-        .map_err(SessionError::Database)
-        .and_then(|res| res.first().copied().ok_or(SessionError::PasswordIncorrect))
+        let hash =
+            PasswordHash::new(&password_hash).map_err(|_| SessionError::PasswordIncorrect)?;
+
+        match argon2.verify_password(password.as_bytes(), &hash) {
+            Ok(_) => Ok(true),
+            Err(_) => Ok(false),
+        }
     }
 
     /// # Destroy all sessions
@@ -419,4 +403,396 @@ impl SessionStore {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DbDateTime};
+    use mockall::predicate::*;
+
+    /// Helper function to create a sample SessionModel for testing
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "123")),
+            session_key: "test_session_key".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::hours(48)),
+            user_id: DbId::from(("users", "456")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_create_session_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        mock_db
+            .expect_create::<CreateSessionModel, SessionModel>()
+            .withf(|table: &str, _| table == "sessions")
+            .times(1)
+            .returning(move |_, _| Ok(vec![test_session.clone()]));
+
+        let test_session = create_test_session();
+
+        let result = SessionModel::create_session(
+            &mock_db,
+            test_session.user_id.clone(),
+            false,
+            Some("127.0.0.1".to_string()),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let session = result.unwrap();
+        assert_eq!(session.user_id, test_session.user_id);
+        assert_eq!(session.ip_address, Some("127.0.0.1".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_get_session_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let test_id = test_session.id.clone();
+        let test_user_id = test_session.user_id.clone();
+
+        // First, encrypt a user ID
+        let (_, encrypted_user_id) = SessionModel::generate_refresh_token(test_user_id.clone())
+            .await
+            .unwrap();
+
+        // Expect session lookup
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .withf(move |table: &str, field: &str, id: &DbId, _| {
+                table == "sessions" && field == "user_id" && *id == test_user_id
+            })
+            .times(1)
+            .returning(move |_, _, _, _| Ok(vec![test_session.clone()]));
+
+        // Expect session renewal
+        mock_db
+            .expect_update_field::<DbDateTime>()
+            .withf(move |id: &DbId, field: &str, value: &DbDateTime| {
+                let expected_expiration = Utc::now().timestamp() + 2 * 24 * 60 * 60;
+                let actual_expiration = value.timestamp();
+
+                *id == test_id
+                    && field == "expires_at"
+                    && (actual_expiration - expected_expiration).abs() < 2
+            })
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let test_session = create_test_session();
+        let test_user_id = test_session.user_id.clone();
+
+        let result = SessionModel::get_session(&mock_db, encrypted_user_id).await;
+
+        assert!(result.is_ok());
+        let session_option = result.unwrap();
+        assert!(session_option.is_some());
+        let session = session_option.unwrap();
+        assert_eq!(session.user_id, test_user_id);
+    }
+
+    #[tokio::test]
+    async fn test_get_session_not_found() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_user_id = DbId::from(("users", "456"));
+
+        // First, encrypt a user ID
+        let (_, encrypted_user_id) = SessionModel::generate_refresh_token(test_user_id.clone())
+            .await
+            .unwrap();
+
+        // Expect session lookup with empty result
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .withf(move |table: &str, field: &str, id: &DbId, _| {
+                table == "sessions" && field == "user_id" && *id == test_user_id
+            })
+            .times(1)
+            .returning(|_, _, _, _| Ok(vec![]));
+
+        let result = SessionModel::get_session(&mock_db, encrypted_user_id).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_session_expired() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut test_session = create_test_session();
+        test_session.expires_at = DbDateTime::from(Utc::now() - chrono::Duration::hours(1));
+        let test_id = test_session.id.clone();
+        let test_user_id = test_session.user_id.clone();
+
+        // First, encrypt a user ID
+        let (_, encrypted_user_id) = SessionModel::generate_refresh_token(test_user_id.clone())
+            .await
+            .unwrap();
+
+        // Expect session lookup
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .withf(move |table: &str, field: &str, id: &DbId, _| {
+                table == "sessions" && field == "user_id" && *id == test_user_id
+            })
+            .times(1)
+            .returning(move |_, _, _, _| Ok(vec![test_session.clone()]));
+
+        // Expect delete call for expired session
+        mock_db
+            .expect_delete()
+            .withf(move |id| *id == test_id)
+            .times(1)
+            .returning(|_| Ok(Some(())));
+
+        let result = SessionModel::get_session(&mock_db, encrypted_user_id).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_session_invalid_encrypted_id() {
+        let mock_db = MockDatabaseOperations::new();
+
+        let result = SessionModel::get_session(&mock_db, "invalid_encrypted_id".to_string()).await;
+
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), SessionError::DecryptionError));
+    }
+
+    #[tokio::test]
+    async fn test_encryption_decryption() {
+        let user_id = DbId::from(("users", "test_user"));
+        let key = &*ENCRYPTION_KEY;
+
+        // Test encryption
+        let encrypted = SessionModel::encrypt_user_id(&user_id, key).unwrap();
+        assert!(!encrypted.is_empty());
+
+        // Test decryption
+        let decrypted = SessionModel::decrypt_user_id(&encrypted, key).unwrap();
+        assert_eq!(decrypted, user_id);
+    }
+
+    #[tokio::test]
+    async fn test_decrypt_invalid_data() {
+        let key = &*ENCRYPTION_KEY;
+        let result = SessionModel::decrypt_user_id("invalid_data", key);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), SessionError::DecryptionError));
+    }
+
+    #[tokio::test]
+    async fn test_password_hash_verification() {
+        let password = "test_password".to_string();
+
+        // Create hash
+        let hash = SessionModel::create_password_hash(password.clone())
+            .await
+            .unwrap();
+        assert!(!hash.is_empty());
+
+        // Verify correct password
+        let result = SessionModel::verify_password(password.clone(), hash.clone()).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+
+        // Verify incorrect password
+        let result = SessionModel::verify_password("wrong_password".to_string(), hash).await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_destroy_all_sessions() {
+        let mut mock_db = MockDatabaseOperations::new();
+
+        mock_db
+            .expect_query::<SessionModel>()
+            .withf(|query: &str, _| query == "DELETE sessions;")
+            .times(1)
+            .returning(|_, _| Ok(vec![]));
+
+        let result = SessionModel::destroy_all_sessions(&mock_db).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_session_by_user_id_existing_same_ip() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let test_id = test_session.id.clone();
+        let test_user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .withf(move |table, field, id, _| {
+                table == "sessions" && field == "user_id" && *id == test_user_id
+            })
+            .times(1)
+            .returning(move |_, _, _, _| Ok(vec![test_session.clone()]));
+
+        // Expect renew_session call
+        mock_db
+            .expect_update_field::<DbDateTime>()
+            .withf(move |id, field, _| *id == test_id && field == "expires_at")
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let test_session = create_test_session();
+        let test_user_id = test_session.user_id.clone();
+
+        let result = SessionModel::get_session_by_user_id(
+            &mock_db,
+            test_user_id.clone(),
+            "127.0.0.1".to_string(),
+        )
+        .await;
+
+        assert!(result.is_ok());
+        let session = result.unwrap();
+        assert_eq!(session.user_id, test_user_id);
+    }
+
+    #[tokio::test]
+    async fn test_get_session_by_user_id_different_ip() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut test_session = create_test_session();
+        test_session.ip_address = Some("192.168.1.1".to_string());
+        let test_id = test_session.id.clone();
+        let test_user_id = test_session.user_id.clone();
+        let is_admin = test_session.is_admin;
+
+        // First query to find existing session
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .withf(move |table, field, id, _| {
+                table == "sessions" && field == "user_id" && *id == test_user_id
+            })
+            .times(1)
+            .returning(move |_, _, _, _| Ok(vec![test_session.clone()]));
+
+        // Expect delete_session call
+        mock_db
+            .expect_delete()
+            .withf(move |id| *id == test_id)
+            .times(1)
+            .returning(|_| Ok(Some(())));
+
+        let mut test_session = create_test_session();
+        test_session.ip_address = Some("192.168.1.1".to_string());
+        let test_user_id = test_session.user_id.clone();
+
+        // Expect create_session call
+        let new_session = create_test_session();
+        mock_db
+            .expect_create::<CreateSessionModel, SessionModel>()
+            .withf(move |table, create_model| {
+                table == "sessions"
+                    && create_model.user_id == test_user_id
+                    && create_model.is_admin == is_admin
+                    && create_model.ip_address == Some("127.0.0.1".to_string())
+            })
+            .times(1)
+            .returning(move |_, _| Ok(vec![new_session.clone()]));
+
+        let mut test_session = create_test_session();
+        test_session.ip_address = Some("192.168.1.1".to_string());
+        let test_user_id = test_session.user_id.clone();
+
+        let result =
+            SessionModel::get_session_by_user_id(&mock_db, test_user_id, "127.0.0.1".to_string())
+                .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_get_session_by_user_id_expired() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut test_session = create_test_session();
+        test_session.expires_at = DbDateTime::from(Utc::now() - chrono::Duration::hours(1));
+        let test_id = test_session.id.clone();
+        let test_user_id = test_session.user_id.clone();
+
+        // First query to find existing session
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .times(1)
+            .returning(move |_, _, _, _| Ok(vec![test_session.clone()]));
+
+        // Expect delete_session call for expired session
+        mock_db
+            .expect_delete()
+            .withf(move |id| *id == test_id)
+            .times(1)
+            .returning(|_| Ok(Some(())));
+
+        let result =
+            SessionModel::get_session_by_user_id(&mock_db, test_user_id, "127.0.0.1".to_string())
+                .await;
+
+        assert!(matches!(result, Err(SessionError::Expired)));
+    }
+
+    #[tokio::test]
+    async fn test_get_session_by_user_id_new() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_user_id = DbId::from(("users", "456"));
+
+        // First query returns no existing session
+        mock_db
+            .expect_read_by_field_thing::<SessionModel>()
+            .times(1)
+            .returning(|_, _, _, _| Ok(vec![]));
+
+        // Expect create_session call
+        let new_session = create_test_session();
+        mock_db
+            .expect_create::<CreateSessionModel, SessionModel>()
+            .withf(move |table, create_model| {
+                table == "sessions"
+                    && create_model.user_id == test_user_id
+                    && !create_model.is_admin
+                    && create_model.ip_address == Some("127.0.0.1".to_string())
+            })
+            .times(1)
+            .returning(move |_, _| Ok(vec![new_session.clone()]));
+
+        let test_user_id = DbId::from(("users", "456"));
+
+        let result =
+            SessionModel::get_session_by_user_id(&mock_db, test_user_id, "127.0.0.1".to_string())
+                .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_renew_session() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let test_id = test_session.id.clone();
+
+        mock_db
+            .expect_update_field::<DbDateTime>()
+            .withf(move |id: &DbId, field: &str, value: &DbDateTime| {
+                let expected_expiration = Utc::now().timestamp() + 2 * 24 * 60 * 60;
+                let actual_expiration = value.timestamp();
+
+                *id == test_id  // Use the cloned ID
+                && field == "expires_at"
+                && (actual_expiration - expected_expiration).abs() < 2
+            })
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let result = SessionModel::renew_session(&mock_db, test_session.id).await;
+        assert!(result.is_ok());
+    }
+}

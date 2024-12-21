@@ -16,7 +16,7 @@
 
 use futures::future::BoxFuture;
 use http::{Request, Response, StatusCode};
-use kiro_auth::{SessionModel, SessionStore};
+use kiro_auth::SessionModel;
 use kiro_database::db_bridge::DatabaseOperations;
 use tonic::{metadata::MetadataMap, Status};
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
@@ -83,7 +83,7 @@ where
         let metadata = Self::http_headers_to_grpc_metadata(request.headers());
         let token = tonic_auth!(get_token_from_md(&metadata), "Token authentication error");
 
-        match SessionStore::get_session(&self.db, token.clone()).await {
+        match SessionModel::get_session(&self.db, token.clone()).await {
             Ok(Some(session)) => {
                 if self.config.admin_endpoints.contains(&path.to_string()) && !session.is_admin {
                     return Err(Status::permission_denied("Admin privileges required"));

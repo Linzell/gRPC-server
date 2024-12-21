@@ -1,13 +1,7 @@
 .PHONY: dist
 
 dist:
-	    cargo run --release -- --config config.toml
-
-help:
-	    cargo run --release -- --config config.toml help
-
-config:
-	    cargo run --release -- --config config.toml configfile
+	    cargo watch -x run
 
 test:
 	    cargo fmt --check
@@ -17,4 +11,4 @@ test:
 test-all:
 		cargo fmt --check
 		cargo clippy --no-deps
-		TZ=UTC cargo test --features test-all-integrations
+		TZ=UTC cargo test --all-features -- --nocapture

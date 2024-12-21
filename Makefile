@@ -28,15 +28,24 @@ dev:
 
 test:
 	@echo "Running quality checks across all crates..."
-	@echo "Checking code formatting..."
-	cargo fmt --all -- --check
-	@echo "Running clippy..."
-	cargo clippy --all-features -- -D warnings
 	@echo "Running tests..."
-	cd kiro-api && $(MAKE) rust
-	cd kiro-database && $(MAKE) test --all-features -- --nocapture
-	cd kiro-auth && $(MAKE) test --all-features -- --nocapture
-	cd kiro && $(MAKE) test --all-features -- --nocapture
+	cd kiro-api && $(MAKE) make
+	cd kiro && $(MAKE) test
+	cd kiro-auth && $(MAKE) test
+	cd kiro-client && $(MAKE) test
+	cd kiro-database && $(MAKE) test
+	@echo "Running security audit..."
+	cargo audit
+	@echo "All quality checks completed."
+
+test-all:
+	@echo "Running quality checks across all crates..."
+	@echo "Running tests..."
+	cd kiro-api && $(MAKE) all
+	cd kiro && $(MAKE) test-all
+	cd kiro-auth && $(MAKE) test-all
+	cd kiro-client && $(MAKE) test-all
+	cd kiro-database && $(MAKE) test-all
 	@echo "Running security audit..."
 	cargo audit
 	@echo "All quality checks completed."

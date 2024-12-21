@@ -66,39 +66,6 @@ pub fn get_token_from_md(md: &MetadataMap) -> Result<String, kiro_database::Data
         ))
     }
 }
-
-/// # Get IP from metadata
-///
-/// Extracts the IP address from the x-forwarded-for header in the gRPC metadata.
-///
-/// ## Arguments
-///
-/// * `metadata` - The gRPC metadata map containing the x-forwarded-for header
-///
-/// ## Returns
-///
-/// * `Some(String)` - The extracted IP address
-/// * `None` - If the header is missing or malformed
-///
-/// ## Examples
-///
-/// ```
-/// use tonic::metadata::{MetadataMap, MetadataKey, MetadataValue};
-/// use std::str::FromStr;
-///
-/// let mut md = MetadataMap::new();
-/// md.insert("x-forwarded-for", MetadataValue::from_str("127.0.0.1").unwrap());
-///
-/// let ip = get_ip_from_md(&md);
-/// assert_eq!(ip, Some("127.0.0.1".to_string()));
-/// ```
-pub fn get_ip_from_md(metadata: &MetadataMap) -> Option<String> {
-    metadata
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,20 +106,5 @@ mod tests {
         md.insert(key, value);
 
         assert!(get_token_from_md(&md).is_err());
-    }
-
-    #[test]
-    fn test_get_ip_from_md() {
-        let mut md = MetadataMap::new();
-        let value = MetadataValue::from_str("127.0.0.1").unwrap();
-        md.insert("x-forwarded-for", value);
-
-        assert_eq!(get_ip_from_md(&md), Some("127.0.0.1".to_string()));
-    }
-
-    #[test]
-    fn test_get_ip_from_md_missing() {
-        let md = MetadataMap::new();
-        assert_eq!(get_ip_from_md(&md), None);
     }
 }
