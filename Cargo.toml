@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["kiro", "kiro-api/rust", "kiro-auth", "kiro-client", "kiro-database"]
+members = ["kiro", "kiro-api/rust", "kiro-client", "kiro-database"]
 
 [profile.release]
 opt-level = 'z'
@@ -14,7 +14,6 @@ opt-level = 3
 # Local dependencies
 kiro = { path = "./kiro" }
 kiro_api = { path = "./kiro-api/rust" }
-kiro_auth = { path = "./kiro-auth" }
 kiro_client = { path = "./kiro-client" }
 kiro_database = { path = "./kiro-database" }
 

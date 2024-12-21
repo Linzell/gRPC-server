@@ -25,7 +25,8 @@ use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[cfg(feature = "auth")]
-use kiro_auth::{AuthService, AuthServiceServer};
+use kiro_client::{auth_routes, AuthService, AuthServiceServer};
+
 #[cfg(feature = "client")]
 use kiro_client::{ClientService, ClientServiceServer};
 
@@ -105,11 +106,15 @@ pub async fn create_app(
     #[cfg(feature = "tracing")]
     let routes_builder = routes_builder.layer(trace_layer(&config));
 
-    Ok(routes_builder
+    let routes_builder = routes_builder
         .layer(cors)
         .route("/health", get(health::health_check))
-        .route("/", get(|| async { "Hello, World!" })))
-    // .nest("/payment", payment_routes(db.clone())))
+        .route("/", get(|| async { "Hello, World!" }));
+
+    #[cfg(feature = "auth")]
+    let routes_builder = routes_builder.nest("/auth", auth_routes(db));
+
+    Ok(routes_builder)
 }
 
 fn setup_cors(config: crate::config::Config) -> Result<CorsLayer, crate::error::ServerError> {
@@ -175,7 +180,6 @@ async fn setup_routes(
 
     #[cfg(feature = "auth")]
     routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
-
     #[cfg(feature = "client")]
     routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));
 

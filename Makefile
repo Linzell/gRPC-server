@@ -31,7 +31,6 @@ test:
 	@echo "Running tests..."
 	cd kiro-api && $(MAKE) test
 	cd kiro && $(MAKE) test
-	cd kiro-auth && $(MAKE) test
 	cd kiro-client && $(MAKE) test
 	cd kiro-database && $(MAKE) test
 	@echo "Running security audit..."
@@ -43,7 +42,6 @@ test-all:
 	@echo "Running tests..."
 	cd kiro-api && $(MAKE) test-all
 	cd kiro && $(MAKE) test-all
-	cd kiro-auth && $(MAKE) test-all
 	cd kiro-client && $(MAKE) test-all
 	cd kiro-database && $(MAKE) test-all
 	@echo "Running security audit..."

@@ -1,4 +1,4 @@
-// http/mod.rs
+// http/user/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -20,18 +20,18 @@ use axum::{
 };
 use kiro_database::db_bridge::Database;
 
-mod login;
+// mod login;
 // mod logout;
 // mod register;
 
 use crate::AuthService;
 
-pub fn auth_routes(db: Database) -> Router {
-    let service = AuthService::new(db);
+pub fn user_routes(db: Database) -> Router {
+    let service = UserService::new(db);
 
     Router::new()
-        .route("/login", post(login::login))
-        .route("/logout", get(unimplemented!()))
+        // .route("/login", post(login::login))
+        // .route("/logout", get(logout::logout))
         .route("/register", post(unimplemented!()))
         .with_state(service)
 }

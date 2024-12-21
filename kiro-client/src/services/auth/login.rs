@@ -1,4 +1,4 @@
-// services/register.rs
+// services/auth/login.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -17,33 +17,43 @@
 use super::*;
 
 use kiro_api::google::protobuf::Timestamp;
-use kiro_client::{CreateUserModel, UserModel};
-use kiro_database::db_bridge::DatabaseOperations;
 use tonic::{Request, Response, Status};
 
 use crate::{
+    models::UserModel,
     utils::{ip::get_ip_from_md, password::valid_password},
     SessionModel,
 };
 
-/// Registers a new user and creates an authentication session
+/// Login service implementation
+///
+/// # Description
+/// Authenticates a user and creates a new session
 ///
 /// # Arguments
-/// * `service` - The authentication service instance
-/// * `request` - The registration request containing email and password
+/// * `service` - The auth service instance
+/// * `request` - Login request containing email and password
 ///
 /// # Returns
-/// * `Result<Response<Session>, Status>` - Returns a new session on success, or error status on failure
+/// * `Ok(Response)` - Response containing session token and expiry
+/// * `Err(Status)` - Error status with description
 ///
 /// # Errors
-/// * Returns `Status::invalid_argument` if:
-///   * Password format is invalid
-///   * Email is already in use
-/// * Returns `Status::internal` if:
-///   * User creation fails
-///   * Session creation fails
-///   * Refresh token generation fails
-pub async fn register(
+/// * `Status::invalid_argument` - Invalid password format
+/// * `Status::not_found` - User not found
+/// * `Status::permission_denied` - Invalid password
+/// * `Status::internal` - Database or internal error
+///
+/// # Example
+/// ```no_run
+/// let request = Request::new(LoginRequest {
+///     email: "user@example.com".to_string(),
+///     password: "password123!".to_string()
+/// });
+/// let response = login(&service, request).await?;
+/// let session = response.into_inner();
+/// ```
+pub async fn login(
     service: &AuthService, request: Request<AuthRequest>,
 ) -> Result<Response<Session>, Status> {
     // Extract IP address from request metadata
@@ -56,35 +66,24 @@ pub async fn register(
         return Err(Status::invalid_argument(e.to_string()));
     }
 
-    // Check if email is already in use
-    match UserModel::check_email(&service.db, request.email.clone()).await {
-        Ok(true) => {}
-        Ok(false) => return Err(Status::invalid_argument("Email already in use".to_string())),
-        Err(e) => return Err(Status::invalid_argument(e.to_string())),
+    // Get user by email
+    let user = UserModel::get_user_by_email(&service.db, request.email.clone())
+        .await
+        .map_err(|e| Status::not_found(format!("User not found: {}", e)))?;
+
+    // Verify password
+    let verified = SessionModel::verify_password(request.password, user.password_hash)
+        .await
+        .map_err(|e| Status::internal(format!("Password verification error: {}", e)))?;
+
+    if !verified {
+        return Err(Status::permission_denied("Invalid password"));
     }
 
-    let password_hash = SessionModel::create_password_hash(request.password.clone()).await?;
-
-    // Create new user
-    let user = service
-        .db
-        .create::<CreateUserModel, UserModel>(
-            "users",
-            CreateUserModel {
-                email: request.email.clone(),
-                password_hash,
-            },
-        )
-        .await?
-        .into_iter()
-        .next()
-        .ok_or_else(|| Status::internal("Failed to create user"))?;
-
-    // Create session
-    let session =
-        SessionModel::create_session(&service.db, user.id.clone(), false, Some(ip_address))
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
+    // Create or get existing session
+    let session = SessionModel::get_session_by_user_id(&service.db, user.id.clone(), ip_address)
+        .await
+        .map_err(|e| Status::internal(format!("Session creation failed: {}", e)))?;
 
     // Generate refresh token
     let refresh_token = SessionModel::generate_refresh_token(session.user_id)
@@ -106,12 +105,12 @@ pub async fn register(
 mod tests {
     use super::*;
 
-    use crate::{CreateSessionModel, SessionModel};
+    use crate::{
+        CreateSessionModel, Language, NotificationSettings, PrivacySettings, SecuritySettings,
+        SessionModel, Theme, UserSettings,
+    };
     use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
     use chrono::Utc;
-    use kiro_client::{
-        Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
-    };
     use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
     use mockall::predicate::{always, eq};
     use rand_core::OsRng;
@@ -169,21 +168,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_register_success() {
+    async fn test_login_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
+        let test_user = create_test_user();
 
         mock_db
             .expect_read_by_field::<UserModel>()
             .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
             .times(1)
-            .returning(|_, _, _, _| Ok(vec![]));
+            .returning(move |_, _, _, _| Ok(vec![test_user.clone()]));
 
         mock_db
-            .expect_create::<CreateUserModel, UserModel>()
-            .with(eq("users"), always())
+            .expect_read_by_field_thing::<SessionModel>()
+            .with(
+                eq("sessions"),
+                eq("user_id"),
+                eq(DbId::from(("users", "123"))),
+                eq(None),
+            )
             .times(1)
-            .returning(move |_, _| Ok(vec![user.clone()]));
+            .returning(|_, _, _, _| Ok(vec![]));
 
         let session = create_test_session();
         mock_db
@@ -201,113 +205,126 @@ mod tests {
             password: "Password123!".to_string(),
         });
 
-        let response = register(&service, request).await.unwrap().into_inner();
+        let response = login(&service, request).await.unwrap().into_inner();
 
         assert!(!response.token.is_empty());
         assert!(response.expire_date.is_some());
     }
 
     #[tokio::test]
-    async fn test_register_invalid_password() {
+    async fn test_login_invalid_password() {
+        let mut mock_db = MockDatabaseOperations::new();
+
+        mock_db
+            .expect_read_by_field::<UserModel>()
+            .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
+            .times(1)
+            .returning(|_, _, _, _| Ok(vec![create_test_user()]));
+
+        let service = AuthService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(AuthRequest {
+            email: "test@example.com".to_string(),
+            password: "WrongPassword123!".to_string(),
+        });
+
+        let error = login(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::PermissionDenied);
+        assert_eq!(error.message(), "Invalid password");
+    }
+
+    #[tokio::test]
+    async fn test_login_user_not_found() {
+        let mut mock_db = MockDatabaseOperations::new();
+
+        mock_db
+            .expect_read_by_field::<UserModel>()
+            .withf(|collection, field, value, _| {
+                collection == "users" && field == "email" && value == "nonexistent@example.com"
+            })
+            .times(1)
+            .returning(|_, _, _, _| Ok(vec![]));
+
+        let service = AuthService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(AuthRequest {
+            email: "nonexistent@example.com".to_string(),
+            password: "Password123!".to_string(),
+        });
+
+        let error = login(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::NotFound);
+        assert!(error.message().contains("User not found"));
+    }
+
+    #[tokio::test]
+    async fn test_login_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+
+        mock_db
+            .expect_read_by_field::<UserModel>()
+            .withf(|collection, field, value, _| {
+                collection == "users" && field == "email" && value == "test@example.com"
+            })
+            .times(1)
+            .returning(|_, _, _, _| Err(kiro_database::DatabaseError::DBOptionNone));
+
+        let service = AuthService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(AuthRequest {
+            email: "test@example.com".to_string(),
+            password: "Password123!".to_string(),
+        });
+
+        let error = login(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::NotFound);
+    }
+
+    #[tokio::test]
+    async fn test_login_invalid_password_format() {
         let mock_db = MockDatabaseOperations::new();
-
         let service = AuthService {
             db: Database::Mock(mock_db),
         };
 
         let request = Request::new(AuthRequest {
             email: "test@example.com".to_string(),
-            password: "invalid".to_string(),
+            password: "short".to_string(),
         });
 
-        let error = register(&service, request).await.unwrap_err();
-
+        let error = login(&service, request).await.unwrap_err();
         assert_eq!(error.code(), tonic::Code::InvalidArgument);
-        assert_eq!(
-            error.message(),
-            "Password too short. Minimum size: 8 characters"
-        );
+        assert!(error.message().contains("Password too short"));
     }
 
     #[tokio::test]
-    async fn test_register_email_in_use() {
-        let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
-
-        mock_db
-            .expect_read_by_field::<UserModel>()
-            .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
-            .times(1)
-            .returning(move |_, _, _, _| Ok(vec![user.clone()]));
-
-        let service = AuthService {
-            db: Database::Mock(mock_db),
-        };
-
-        let request = Request::new(AuthRequest {
-            email: "test@example.com".to_string(),
-            password: "Password123!".to_string(),
-        });
-
-        let error = register(&service, request).await.unwrap_err();
-        assert_eq!(error.code(), tonic::Code::InvalidArgument);
-        assert_eq!(error.message(), "Email already in use");
-    }
-
-    #[tokio::test]
-    async fn test_register_user_creation_failure() {
+    async fn test_login_session_creation_error() {
         let mut mock_db = MockDatabaseOperations::new();
 
         mock_db
             .expect_read_by_field::<UserModel>()
             .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
             .times(1)
-            .returning(|_, _, _, _| Ok(vec![]));
+            .returning(|_, _, _, _| Ok(vec![create_test_user()]));
 
         mock_db
-            .expect_create::<CreateUserModel, UserModel>()
-            .with(eq("users"), always())
+            .expect_read_by_field_thing::<SessionModel>()
+            .with(
+                eq("sessions"),
+                eq("user_id"),
+                eq(DbId::from(("users", "123"))),
+                eq(None),
+            )
             .times(1)
-            .returning(|_, _| Err(DatabaseError::Internal("Failed to create user".to_string())));
-
-        let service = AuthService {
-            db: Database::Mock(mock_db),
-        };
-
-        let request = Request::new(AuthRequest {
-            email: "test@example.com".to_string(),
-            password: "Password123!".to_string(),
-        });
-
-        let error = register(&service, request).await.unwrap_err();
-        assert_eq!(error.code(), tonic::Code::Internal);
-        assert_eq!(error.message(), "Failed to create user");
-    }
-
-    #[tokio::test]
-    async fn test_register_session_creation_failure() {
-        let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
-
-        mock_db
-            .expect_read_by_field::<UserModel>()
-            .with(eq("users"), eq("email"), eq("test@example.com"), eq(None))
-            .times(1)
-            .returning(|_, _, _, _| Ok(vec![]));
-
-        mock_db
-            .expect_create::<CreateUserModel, UserModel>()
-            .with(eq("users"), always())
-            .times(1)
-            .returning(move |_, _| Ok(vec![user.clone()]));
-
-        mock_db
-            .expect_create::<CreateSessionModel, SessionModel>()
-            .with(eq("sessions"), always())
-            .times(1)
-            .returning(|_, _| {
+            .returning(|_, _, _, _| {
                 Err(DatabaseError::Internal(
-                    "Failed to create session".to_string(),
+                    "Session creation failed".to_string(),
                 ))
             });
 
@@ -320,8 +337,8 @@ mod tests {
             password: "Password123!".to_string(),
         });
 
-        let error = register(&service, request).await.unwrap_err();
+        let error = login(&service, request).await.unwrap_err();
         assert_eq!(error.code(), tonic::Code::Internal);
-        assert_eq!(error.message(), "Internal error: Failed to create session");
+        assert!(error.message().contains("Session creation failed"));
     }
 }

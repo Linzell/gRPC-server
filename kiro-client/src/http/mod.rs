@@ -1,4 +1,4 @@
-// models/mod.rs
+// http/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,9 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod session_model;
+#[cfg(feature = "auth")]
+mod auth;
+#[cfg(feature = "user")]
+mod user;
 
-/// # Session Models
+/// # Auth HTTP1 Routes
 ///
-/// The session model provides models for authentication.
-pub use session_model::{CreateSessionModel, SessionModel};
+/// The auth module provides HTTP1 routes for the authentication service.
+#[cfg(feature = "auth")]
+pub use auth::auth_routes;
+
+/// # User HTTP1 Routes
+///
+/// The user module provides HTTP1 routes for the user service.
+#[cfg(feature = "user")]
+pub use user::user_routes;

@@ -1,4 +1,4 @@
-// services/logout.rs
+// services/auth/logout.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -20,16 +20,28 @@ use tonic::{Request, Response, Status};
 
 use crate::SessionModel;
 
-/// Handles user logout by deleting the current session
+/// Logout service implementation
+///
+/// # Description
+/// Logs out the current user by deleting the session from the database
 ///
 /// # Arguments
-///
 /// * `service` - Reference to the authentication service
-/// * `request` - The incoming request containing session information
+/// * `request` - The request containing the session to delete
 ///
 /// # Returns
+/// * `Ok(Empty)` - Empty response on success
+/// * `Err(Status)` - Appropriate error status on failure
 ///
-/// Returns empty response on success, or appropriate error status
+/// # Errors
+/// * `INTERNAL_SERVER_ERROR` - Database error
+/// * `NOT_FOUND` - Session not found in request
+///
+/// # Example
+/// ```no_run
+/// let request = Request::new(Empty {});
+/// logout(service, request).await;
+/// ```
 pub async fn logout(
     service: &AuthService, request: Request<Empty>,
 ) -> Result<Response<Empty>, Status> {

@@ -1,4 +1,4 @@
-// models/mod.rs
+// http/auth/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod session_model;
-mod user_model;
-
-/// # Session Models
-///
-/// The session model provides models for authentication.
-pub use session_model::{CreateSessionModel, SessionModel};
-
-/// # User Models
-///
-/// The user model provides models for users.
-pub use user_model::{
-    CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
-    UserModel, UserSettings,
+use axum::{
+    routing::{get, post},
+    Router,
 };
+use kiro_database::db_bridge::Database;
+
+mod login;
+mod logout;
+mod register;
+
+use crate::AuthService;
+
+pub fn auth_routes(db: Database) -> Router {
+    let service = AuthService::new(db);
+
+    Router::new()
+        .route("/login", post(login::login))
+        .route("/logout", get(logout::logout))
+        .route("/register", post(register::register))
+        .with_state(service)
+}

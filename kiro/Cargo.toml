@@ -11,8 +11,8 @@ publish = false
 [features]
 default = ["tracing", "surrealdb", "auth"]
 
-auth = ["kiro_auth/services", "kiro_client/models"]
-client = ["kiro_client/services"]
+auth = ["kiro_client/auth"]
+client = ["kiro_client/user"]
 mailer = ["dep:uuid"]
 
 tracing = [
@@ -90,10 +90,6 @@ uuid = { version = "1.9.1", default-features = false, features = [
 # Optional dependencies
 ## Client dependencies
 kiro_client = { workspace = true, optional = true }
-
-# Optional dependencies
-## Auth dependencies
-kiro_auth = { workspace = true, optional = true }
 
 # Optional dependencies
 ## Testing dependencies

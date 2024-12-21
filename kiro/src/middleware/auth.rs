@@ -16,7 +16,7 @@
 
 use futures::future::BoxFuture;
 use http::{Request, Response, StatusCode};
-use kiro_auth::SessionModel;
+use kiro_client::SessionModel;
 use kiro_database::db_bridge::DatabaseOperations;
 use tonic::{metadata::MetadataMap, Status};
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};

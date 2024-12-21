@@ -1,4 +1,4 @@
-// models/mod.rs
+// services/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,18 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod session_model;
-mod user_model;
+#[cfg(feature = "auth")]
+mod auth;
+#[cfg(feature = "user")]
+mod user;
 
-/// # Session Models
+/// # Auth Services
 ///
-/// The session model provides models for authentication.
-pub use session_model::{CreateSessionModel, SessionModel};
+/// The auth module provides services for authentication.
+#[cfg(feature = "auth")]
+pub use auth::AuthService;
 
-/// # User Models
+/// # User Services
 ///
-/// The user model provides models for users.
-pub use user_model::{
-    CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
-    UserModel, UserSettings,
-};
+/// The user module provides services for users.
+#[cfg(feature = "user")]
+pub use user::UserService;

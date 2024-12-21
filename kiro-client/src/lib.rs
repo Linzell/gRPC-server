@@ -15,26 +15,57 @@
 // limitations under the License.
 
 mod error;
-#[cfg(feature = "models")]
+mod http;
 mod models;
+mod services;
+mod utils;
+
+/// # Session Models
+///
+/// The session module provides models for authentication.
+#[cfg(feature = "auth")]
+pub use models::{CreateSessionModel, SessionModel};
 
 /// # User Models
 ///
 /// The user module provides models for users.
-#[cfg(feature = "models")]
 pub use models::{
     CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
     UserModel, UserSettings,
 };
 
+/// # Auth Services
+///
+/// The auth module provides services for authentication.
+#[cfg(feature = "auth")]
+pub use services::AuthService;
+
+/// # Auth HTTP1 Routes
+///
+/// The auth module provides HTTP1 routes for the authentication service.
+#[cfg(feature = "auth")]
+pub use http::auth_routes;
+
+/// # Auth Server Builder
+///
+/// The auth module provides a builder for the authentication server.
+#[cfg(feature = "auth")]
+pub use kiro_api::auth::v1::auth_service_server::AuthServiceServer;
+
 /// # Client Server Builder
 ///
 /// The client module provides a builder for the client server.
-#[cfg(feature = "services")]
+#[cfg(feature = "user")]
 pub use kiro_api::client::v1::client_service_server::ClientServiceServer;
+
+/// # Auth File Descriptor Set
+///
+/// The auth module provides the file descriptor set for the authentication service.
+#[cfg(feature = "auth")]
+pub use kiro_api::auth::AUTH_V1_FILE_DESCRIPTOR_SET;
 
 /// # User File Descriptor Set
 ///
 /// The user module provides the file descriptor set for the user service.
-#[cfg(feature = "services")]
+#[cfg(feature = "user")]
 pub use kiro_api::client::CLIENT_V1_FILE_DESCRIPTOR_SET;

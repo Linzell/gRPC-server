@@ -66,6 +66,7 @@ pub fn get_token_from_md(md: &MetadataMap) -> Result<String, kiro_database::Data
         ))
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

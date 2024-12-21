@@ -33,7 +33,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "mailer")]
 use kiro_mailer::{Mailer, MailerTrait};
 
-use crate::error::SessionError;
+use crate::error::ClientError;
 
 static ENCRYPTION_KEY: Lazy<[u8; 32]> = Lazy::new(|| {
     let mut key = [0u8; 32];
@@ -114,7 +114,7 @@ impl SessionModel {
     }
 
     /// Encrypt user ID using AES-GCM
-    fn encrypt_user_id(user_id: &DbId, key: &[u8; 32]) -> Result<String, SessionError> {
+    fn encrypt_user_id(user_id: &DbId, key: &[u8; 32]) -> Result<String, ClientError> {
         let cipher = Aes256Gcm::new(key.into());
 
         // Generate random nonce
@@ -128,7 +128,7 @@ impl SessionModel {
         let user_id_bytes = user_id_string.as_bytes();
         let ciphertext = cipher
             .encrypt(nonce, user_id_bytes.as_ref())
-            .map_err(|_| SessionError::EncryptionError)?;
+            .map_err(|_| ClientError::EncryptionError)?;
 
         // Combine nonce and ciphertext and encode
         let mut combined = nonce_bytes.to_vec();
@@ -138,13 +138,13 @@ impl SessionModel {
     }
 
     /// Decrypt user ID using AES-GCM
-    fn decrypt_user_id(encrypted: &str, key: &[u8; 32]) -> Result<DbId, SessionError> {
+    fn decrypt_user_id(encrypted: &str, key: &[u8; 32]) -> Result<DbId, ClientError> {
         let combined = URL_SAFE
             .decode(encrypted)
-            .map_err(|_| SessionError::DecryptionError)?;
+            .map_err(|_| ClientError::DecryptionError)?;
 
         if combined.len() < 12 {
-            return Err(SessionError::DecryptionError);
+            return Err(ClientError::DecryptionError);
         }
 
         let (nonce_bytes, ciphertext) = combined.split_at(12);
@@ -153,11 +153,11 @@ impl SessionModel {
 
         let plaintext = cipher
             .decrypt(nonce, ciphertext)
-            .map_err(|_| SessionError::DecryptionError)?;
+            .map_err(|_| ClientError::DecryptionError)?;
 
-        let user_id = String::from_utf8(plaintext).map_err(|_| SessionError::DecryptionError)?;
+        let user_id = String::from_utf8(plaintext).map_err(|_| ClientError::DecryptionError)?;
 
-        DbId::try_from(user_id).map_err(|_| SessionError::DecryptionError)
+        DbId::try_from(user_id).map_err(|_| ClientError::DecryptionError)
     }
 
     /// # Create session
@@ -171,7 +171,7 @@ impl SessionModel {
     /// ```
     pub async fn create_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, user_id: DbId, is_admin: bool, ip_address: Option<String>,
-    ) -> Result<SessionModel, SessionError> {
+    ) -> Result<SessionModel, ClientError> {
         let (session_key, _encrypted_user_id) =
             Self::generate_refresh_token(user_id.clone()).await?;
 
@@ -185,8 +185,8 @@ impl SessionModel {
             },
         )
         .await
-        .map_err(SessionError::Database)
-        .and_then(|res| res.first().cloned().ok_or(SessionError::NotCreated))
+        .map_err(ClientError::Database)
+        .and_then(|res| res.first().cloned().ok_or(ClientError::NotCreated))
     }
 
     /// # Get session
@@ -200,7 +200,7 @@ impl SessionModel {
     /// ```
     pub async fn get_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, encrypted_user_id: String,
-    ) -> Result<Option<SessionModel>, SessionError> {
+    ) -> Result<Option<SessionModel>, ClientError> {
         let key = &*ENCRYPTION_KEY;
         let user_id = Self::decrypt_user_id(&encrypted_user_id, key)?;
 
@@ -233,11 +233,11 @@ impl SessionModel {
     /// ```
     pub async fn get_session_by_user_id<DB: DatabaseOperations + Send + Sync>(
         db: &DB, user_id: DbId, ip_address: String,
-    ) -> Result<SessionModel, SessionError> {
+    ) -> Result<SessionModel, ClientError> {
         let res = db
             .read_by_field_thing::<SessionModel>("sessions", "user_id", user_id.clone(), None)
             .await
-            .map_err(SessionError::Database)?;
+            .map_err(ClientError::Database)?;
 
         if let Some(existing_session) = res.first() {
             #[cfg(feature = "mailer")]
@@ -245,7 +245,7 @@ impl SessionModel {
                 // Send new connection email
                 let template = Mailer::load_template("new_connection_detected.html", None)
                     .await
-                    .map_err(SessionError::IO)?
+                    .map_err(ClientError::IO)?
                     .replace("${{CONNECTION_TYPE}}", "login")
                     .replace("${{CONNECTION_DATE}}", &chrono::Local::now().to_string())
                     .replace("${{CONNECTION_IP}}", &ip_address);
@@ -258,7 +258,7 @@ impl SessionModel {
 
             if Self::is_expired(&existing_session.expires_at) {
                 Self::delete_session(db, existing_session.id.clone()).await?;
-                return Err(SessionError::Expired);
+                return Err(ClientError::Expired);
             }
 
             // if ip_address is different, delete session and create new one
@@ -283,7 +283,7 @@ impl SessionModel {
     }
 
     /// Generate refresh token with encrypted user ID
-    pub async fn generate_refresh_token(user_id: DbId) -> Result<(String, String), SessionError> {
+    pub async fn generate_refresh_token(user_id: DbId) -> Result<(String, String), ClientError> {
         // Use the static key
         let key = &*ENCRYPTION_KEY;
 
@@ -310,10 +310,10 @@ impl SessionModel {
     /// ```
     pub async fn delete_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, session_id: DbId,
-    ) -> Result<(), SessionError> {
+    ) -> Result<(), ClientError> {
         db.delete(session_id)
             .await
-            .map_err(SessionError::Database)
+            .map_err(ClientError::Database)
             .map(|_| ())
     }
 
@@ -328,14 +328,14 @@ impl SessionModel {
     /// ```
     pub async fn renew_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, session_id: DbId,
-    ) -> Result<(), SessionError> {
+    ) -> Result<(), ClientError> {
         db.update_field(
             session_id,
             "expires_at",
             DbDateTime::from_timestamp(Utc::now().timestamp() + 2 * 24 * 60 * 60, 0).unwrap(),
         )
         .await
-        .map_err(SessionError::Database)
+        .map_err(ClientError::Database)
     }
 
     /// # Create password hash
@@ -348,14 +348,14 @@ impl SessionModel {
     /// let password_hash = SessionStore::create_password_hash(db.clone(), password).await?;
     ///
     /// prin
-    pub async fn create_password_hash(password: String) -> Result<String, SessionError> {
+    pub async fn create_password_hash(password: String) -> Result<String, ClientError> {
         let argon2 = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
 
         argon2
             .hash_password(password.as_bytes(), &salt)
             .map(|hash| hash.to_string())
-            .map_err(|_| SessionError::PasswordHashingFailed)
+            .map_err(|_| ClientError::PasswordHashingFailed)
     }
 
     /// # Verify password
@@ -371,11 +371,10 @@ impl SessionModel {
     /// ```
     pub async fn verify_password(
         password: String, password_hash: String,
-    ) -> Result<bool, SessionError> {
+    ) -> Result<bool, ClientError> {
         let argon2 = Argon2::default();
 
-        let hash =
-            PasswordHash::new(&password_hash).map_err(|_| SessionError::PasswordIncorrect)?;
+        let hash = PasswordHash::new(&password_hash).map_err(|_| ClientError::PasswordIncorrect)?;
 
         match argon2.verify_password(password.as_bytes(), &hash) {
             Ok(_) => Ok(true),
@@ -394,10 +393,10 @@ impl SessionModel {
     /// ```
     pub async fn destroy_all_sessions<DB: DatabaseOperations + Send + Sync>(
         db: &DB,
-    ) -> Result<(), SessionError> {
+    ) -> Result<(), ClientError> {
         db.query::<SessionModel>("DELETE sessions;", None)
             .await
-            .map_err(SessionError::Database)
+            .map_err(ClientError::Database)
             .map(|_| ())
     }
 }
@@ -562,7 +561,7 @@ mod tests {
         let result = SessionModel::get_session(&mock_db, "invalid_encrypted_id".to_string()).await;
 
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), SessionError::DecryptionError));
+        assert!(matches!(result.unwrap_err(), ClientError::DecryptionError));
     }
 
     #[tokio::test]
@@ -584,7 +583,7 @@ mod tests {
         let key = &*ENCRYPTION_KEY;
         let result = SessionModel::decrypt_user_id("invalid_data", key);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), SessionError::DecryptionError));
+        assert!(matches!(result.unwrap_err(), ClientError::DecryptionError));
     }
 
     #[tokio::test]
@@ -737,7 +736,7 @@ mod tests {
             SessionModel::get_session_by_user_id(&mock_db, test_user_id, "127.0.0.1".to_string())
                 .await;
 
-        assert!(matches!(result, Err(SessionError::Expired)));
+        assert!(matches!(result, Err(ClientError::Expired)));
     }
 
     #[tokio::test]
