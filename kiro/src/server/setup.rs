@@ -27,13 +27,13 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 #[cfg(feature = "auth")]
 use kiro_client::{auth_routes, AuthService, AuthServiceServer};
 
-#[cfg(feature = "client")]
-use kiro_client::{ClientService, ClientServiceServer};
+// #[cfg(feature = "client")]
+// use kiro_client::{ClientService, ClientServiceServer};
 
 #[cfg(feature = "auth")]
 use crate::middleware::auth::auth_layer;
-#[cfg(feature = "client")]
-use crate::middleware::client::ClientService;
+// #[cfg(feature = "client")]
+// use crate::middleware::client::ClientService;
 #[cfg(feature = "tracing")]
 use crate::middleware::logging::trace_layer;
 
@@ -58,10 +58,10 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     health_reporter
         .set_serving::<AuthServiceServer<AuthService>>()
         .await;
-    #[cfg(feature = "client")]
-    health_reporter
-        .set_serving::<ClientServiceServer<ClientService>>()
-        .await;
+    // #[cfg(feature = "client")]
+    // health_reporter
+    //     .set_serving::<ClientServiceServer<ClientService>>()
+    //     .await;
     // health_reporter
     //     .set_serving::<OrganizationServiceServer<OrganizationService>>()
     //     .await;
@@ -180,8 +180,8 @@ async fn setup_routes(
 
     #[cfg(feature = "auth")]
     routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
-    #[cfg(feature = "client")]
-    routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));
+    // #[cfg(feature = "client")]
+    // routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));
 
     Ok(routes_builder)
 }

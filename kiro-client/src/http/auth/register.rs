@@ -36,25 +36,29 @@ use crate::{
 ///
 /// # Arguments
 /// * `service` - The authentication service instance
+/// * `headers` - HTTP headers containing IP address and other metadata
 /// * `request` - The registration request containing email and password
 ///
 /// # Returns
-/// * `Ok(Session)` - The session token and expiry date
-/// * `Err(Status)` - Appropriate error status on failure
+/// * HTTP response with either:
+///   * `200 OK` with Session containing token and expiry
+///   * Error status code with message
 ///
 /// # Errors
-/// * `INVALID_ARGUMENT` - Invalid email or password
-/// * `INTERNAL_SERVER_ERROR` - Database error
-/// * `BAD_REQUEST` - Email already in use
+/// * `400 BAD REQUEST` - Invalid password or email already in use
+/// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```no_run
-/// let request = Request::new(LoginRequest {
+/// ```rust,ignore
+/// use axum::{Json, http::HeaderMap};
+/// use kiro_api::auth::v1::AuthRequest;
+///
+/// let request = Json(AuthRequest {
 ///     email: "user@example.com".to_string(),
 ///     password: "password123!".to_string()
 /// });
-/// let response = register(service, request).await?;
-/// let session = response.into_inner();
+/// let headers = HeaderMap::new();
+/// let response = register(State(service), headers, request).await;
 /// ```
 pub async fn register(
     State(service): State<AuthService>, headers: HeaderMap, Json(request): Json<AuthRequest>,

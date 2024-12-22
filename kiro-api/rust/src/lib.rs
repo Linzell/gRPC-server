@@ -27,5 +27,5 @@ pub use api::client;
 pub use api::common;
 #[cfg(feature = "api")]
 pub use api::google;
-#[cfg(feature = "group")]
-pub use api::group;
+// #[cfg(feature = "group")]
+// pub use api::group;

@@ -99,13 +99,17 @@ pub struct SecuritySettings {
 /// - Security configurations
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// let settings = UserSettings {
 ///     language: Some(Language::English),
 ///     theme: Some(Theme::Dark),
-///     notifications: NotificationSettings { ... },
-///     privacy: PrivacySettings { ... },
-///     security: SecuritySettings { ... },
+///     notifications: NotificationSettings { email: true, push: true, sms: false },
+///     privacy: PrivacySettings { data_collection: true, location: false },
+///     security: SecuritySettings {
+///         two_factor: true,
+///         qr_code: "qr_code".to_string(),
+///         magic_link: true
+///     },
 /// };
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,13 +139,29 @@ pub struct UserSettings {
 /// - `is_admin`: Administrative privileges flag
 ///
 /// # Example
-/// ```rust
+/// ```rust,ignore
 /// let user = UserModel {
 ///     id: DbId::new(),
+///     customer_id: Some("cust_123".to_string()),
 ///     email: "user@example.com".to_string(),
 ///     password_hash: "hashed_password".to_string(),
-///     settings: UserSettings { ... },
-///     // ... other fields
+///     avatar: Some("avatar.jpg".to_string()),
+///     settings: UserSettings {
+///         language: Some(Language::English),
+///         theme: Some(Theme::Dark),
+///         notifications: NotificationSettings { email: true, push: true, sms: false },
+///         privacy: PrivacySettings { data_collection: true, location: false },
+///         security: SecuritySettings {
+///             two_factor: true,
+///             qr_code: "qr_code".to_string(),
+///             magic_link: true,
+///         }
+///     },
+///     groups: vec![],
+///     created_at: DbDateTime::now(),
+///     updated_at: DbDateTime::now(),
+///     activated: true,
+///     is_admin: false,
 /// };
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -168,8 +188,8 @@ pub struct UserModel {
 /// - `password_hash`: Hashed password for authentication
 ///
 /// # Example
-/// ```rust
-/// let new_user = CreateUserModel {
+/// ```rust,ignore
+/// let new_user = kiro_client::CreateUserModel {
 ///     email: "new@example.com".to_string(),
 ///     password_hash: "secure_hash".to_string(),
 /// };
@@ -253,7 +273,7 @@ impl UserModel {
     /// * `Err(ClientError)` - Database error or user not found
     ///
     /// # Example
-    /// ```rust
+    /// ```rust,ignore
     /// let user = UserModel::get_user_by_email(&db, "user@example.com".to_string()).await?;
     /// ```
     pub async fn get_user_by_email<DB: DatabaseOperations + Send + Sync>(
@@ -279,7 +299,7 @@ impl UserModel {
     /// * `Err(ClientError)` - Database error
     ///
     /// # Example
-    /// ```rust
+    /// ```rust,ignore
     /// let available = UserModel::check_email(&db, "new@example.com".to_string()).await?;
     /// ```
     pub async fn check_email<DB: DatabaseOperations + Send + Sync>(

@@ -24,11 +24,11 @@ mod utils;
 #[cfg(feature = "surrealdb")]
 pub use database::surrealdb_repo::SurrealDBRepo;
 
-/// # Postgres Module
-///
-/// The postgres module provides postgres functionality.
-#[cfg(feature = "postgres")]
-pub use database::postgres_repo::PostgresRepo;
+// /// # Postgres Module
+// ///
+// /// The postgres module provides postgres functionality.
+// #[cfg(feature = "postgres")]
+// pub use database::postgres_repo::PostgresRepo;
 
 /// # Database Module
 ///

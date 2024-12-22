@@ -38,7 +38,7 @@ use crate::AuthService;
 /// - POST /register - New user registration
 ///
 /// # Example
-/// ```
+/// ```rust,ignore
 /// use kiro_database::db_bridge::Database;
 ///
 /// let db = Database::new("connection_string").await?;

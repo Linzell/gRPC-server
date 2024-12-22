@@ -28,34 +28,38 @@ use crate::{
     SessionModel, UserModel,
 };
 
-/// Login route handler
+/// Login service implementation
 ///
 /// # Description
 /// Authenticates a user and creates a new session
 ///
 /// # Arguments
-/// * `service` - The auth service instance
-/// * `headers` - Request headers containing IP address
-/// * `request` - Login request containing email and password
+/// * `service` - The authentication service instance
+/// * `headers` - HTTP headers containing IP address and other metadata
+/// * `request` - The login request containing email and password
 ///
 /// # Returns
-/// * `Ok(Response)` - Response containing session token and expiry
-/// * `Err(Status)` - Error status with description
+/// * HTTP response with either:
+///   * `200 OK` with Session containing token and expiry
+///   * Error status code with message
 ///
 /// # Errors
-/// * `BAD_REQUEST` - Invalid password
-/// * `NOT_FOUND` - User not found
-/// * `INTERNAL_SERVER_ERROR` - Database error
-/// * `UNAUTHORIZED` - Invalid password
+/// * `400 BAD REQUEST` - Invalid password format
+/// * `401 UNAUTHORIZED` - Invalid password
+/// * `404 NOT FOUND` - User not found
+/// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```no_run
-/// let request = Request::new(LoginRequest {
+/// ```rust,ignore
+/// use axum::{Json, http::HeaderMap};
+/// use kiro_api::auth::v1::AuthRequest;
+///
+/// let request = Json(AuthRequest {
 ///     email: "user@example.com".to_string(),
 ///     password: "password123!".to_string()
 /// });
-/// let response = login(service, headers, request).await;
-/// let session: Session = response.into_body();
+/// let headers = HeaderMap::new();
+/// let response = login(State(service), headers, request).await;
 /// ```
 pub async fn login(
     State(service): State<AuthService>, headers: HeaderMap, Json(request): Json<AuthRequest>,

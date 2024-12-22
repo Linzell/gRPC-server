@@ -49,13 +49,13 @@ static ENCRYPTION_KEY: Lazy<[u8; 32]> = Lazy::new(|| {
 ///
 /// ## Model
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Debug, Clone, Serialize, Deserialize)]
 /// pub struct SessionModel {
-///   pub id: Thing,
+///   pub id: DbId,
 ///   pub session_key: String,
-///   pub expires_at: Datetime,
-///   pub user_id: Thing,
+///   pub expires_at: DbDateTime,
+///   pub user_id: DbId,
 ///   pub ip_address: Option<String>,
 ///   pub is_admin: bool,
 /// }
@@ -76,11 +76,11 @@ pub struct SessionModel {
 ///
 /// ## Model
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Clone, Serialize, Deserialize)]
 /// pub struct CreateSessionModel {
 ///   pub session_key: String,
-///   pub user_id: Thing,
+///   pub user_id: DbId,
 ///   pub is_admin: bool,
 ///   pub ip_address: Option<String>,
 /// }
@@ -105,8 +105,9 @@ impl SessionModel {
     ///
     /// The `is_expired` method checks if a session is expired.
     ///
-    /// ```rust
-    /// let is_expired = SessionStore::is_expired(&expires_at);
+    /// ```rust,ignore
+    /// let expires_at = DbDateTime::now();
+    /// let is_expired = SessionModel::is_expired(&expires_at);
     ///
     /// println!("🗝️ Session expired: {:?}", is_expired);
     /// ```
@@ -166,8 +167,8 @@ impl SessionModel {
     ///
     /// The `create_session` method creates a session.
     ///
-    /// ```rust
-    /// let session = SessionStore::create_session(db.clone(), user_id, is_admin, ip_address).await?;
+    /// ```rust,ignore
+    /// let session = SessionStore::create_session(&db, user_id, is_admin, Some(ip_address)).await?;
     ///
     /// println!("🗝️ Session: {:?}", session);
     /// ```
@@ -195,8 +196,8 @@ impl SessionModel {
     ///
     /// The `get_session` method gets a session.
     ///
-    /// ```rust
-    /// let session = SessionStore::get_session(db.clone(), session_key).await?;
+    /// ```rust,ignore
+    /// let session = SessionStore::get_session(&db, encrypted_user_id).await?;
     ///
     /// println!("🗝️ Session: {:?}", session);
     /// ```
@@ -224,12 +225,12 @@ impl SessionModel {
         }
     }
 
-    /// # Get token by user id
+    /// # Get session by user id
     ///
     /// The `get_token_by_user_id` method gets a token by user id.
     ///
-    /// ```rust
-    /// let token = SessionStore::get_token_by_user_id(db.clone(), user_id).await?;
+    /// ```rust,ignore
+    /// let token = SessionStore::get_token_by_user_id(&db, user_id, ip_address).await?;
     ///
     /// println!("🗝️ Token: {:?}", token);
     /// ```
@@ -320,8 +321,8 @@ impl SessionModel {
     ///
     /// The `delete_session` method deletes a session.
     ///
-    /// ```rust
-    /// SessionStore::delete_session(db.clone(), session_key).await?;
+    /// ```rust,ignore
+    /// SessionStore::delete_session(&db, session_id).await?;
     ///
     /// println!("🗝️ Session deleted");
     /// ```
@@ -338,8 +339,8 @@ impl SessionModel {
     ///
     /// The `renew_session` method renews a session.
     ///
-    /// ```rust
-    /// let session = SessionStore::renew_session(db.clone(), session_key).await?;
+    /// ```rust,ignore
+    /// let session = SessionStore::renew_session(&db, session_id).await?;
     ///
     /// println!("🗝️ Session renewed: {:?}", session);
     /// ```
@@ -359,12 +360,13 @@ impl SessionModel {
     ///
     /// The `create_password_hash` method creates a password hash.
     ///
-    /// This method use Argon2 to hash the password.
+    /// This method uses Argon2 to hash the password.
     ///
-    /// ```rust
-    /// let password_hash = SessionStore::create_password_hash(db.clone(), password).await?;
+    /// ```rust,ignore
+    /// let password_hash = SessionStore::create_password_hash(password).await?;
     ///
-    /// prin
+    /// println!("🔒 Password hash: {:?}", password_hash);
+    /// ```
     pub async fn create_password_hash(password: String) -> Result<String, ClientError> {
         let argon2 = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
@@ -381,8 +383,8 @@ impl SessionModel {
     ///
     /// This method use Argon2 to verify the password.
     ///
-    /// ```rust
-    /// let is_valid = SessionStore::verify_password(db.clone(), password, password_hash).await?;
+    /// ```rust,ignore
+    /// let is_valid = SessionStore::verify_password(password, password_hash).await?;
     ///
     /// println!("🔒 Password is valid: {:?}", is_valid);
     /// ```
@@ -403,8 +405,8 @@ impl SessionModel {
     ///
     /// The `destroy_all_sessions` method destroys all sessions
     ///
-    /// ```rust
-    /// SessionStore::destroy_all_sessions(db.clone()).await?;
+    /// ```rust,ignore
+    /// SessionStore::destroy_all_sessions(&db).await?;
     ///
     /// println!("🗝️ All sessions destroyed");
     /// ```

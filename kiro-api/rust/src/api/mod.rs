@@ -22,5 +22,5 @@ pub mod client;
 pub mod common;
 #[cfg(feature = "api")]
 pub mod google;
-#[cfg(feature = "group")]
-pub mod group;
+// #[cfg(feature = "group")]
+// pub mod group;

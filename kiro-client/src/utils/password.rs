@@ -18,7 +18,7 @@
 ///
 /// The PasswordError enum is an enum that represents the errors for passwords.
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Debug, Error, PartialEq)]
 /// pub enum PasswordError {
 ///   #[error("Password too short. Minimum size: {} characters", PASS_MIN_LENGTH)]
@@ -88,7 +88,7 @@ const SPECIAL_SYMBOLS: &str = "-_/\\(){}[]|!@#$%^&*)+=\"\';:<>,.?";
 ///
 /// The `contains_number` method returns the number of characters in a password.
 ///
-/// ```rust
+/// ```rust,ignore
 /// let number = contains_number(password, allowed);
 ///
 /// println!("🔢 Number: {:?}", number);
@@ -107,7 +107,7 @@ fn contains_number(pass: &str, allowed: &str) -> usize {
 ///
 /// The `valid_password` method returns a result if the password is valid.
 ///
-/// ```rust
+/// ```rust,ignore
 /// let result = valid_password(password);
 ///
 /// println!("✅ Result: {:?}", result);

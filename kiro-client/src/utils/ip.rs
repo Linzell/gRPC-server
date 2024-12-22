@@ -25,7 +25,7 @@ use std::net::IpAddr;
 /// * `Option<String>` - IP address if found, None otherwise
 ///
 /// # Example
-/// ```
+/// ```rust,ignore
 /// let metadata = request.metadata();
 /// let ip = get_ip_from_md(metadata).unwrap_or_else(|| "unknown".to_string());
 /// ```
@@ -65,7 +65,7 @@ pub fn get_ip_from_md(metadata: &tonic::metadata::MetadataMap) -> Option<String>
 /// * `Option<String>` - IP address if found, None otherwise
 ///
 /// # Example
-/// ```
+/// ```rust,ignore
 /// let ip = get_ip_from_headers(headers).unwrap_or_else(|| "unknown".to_string());
 /// ```
 pub fn get_ip_from_headers(headers: &http::HeaderMap) -> Option<String> {

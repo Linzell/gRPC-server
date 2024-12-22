@@ -45,7 +45,7 @@ use crate::{
 /// * `Status::internal` - Database or internal error
 ///
 /// # Example
-/// ```no_run
+/// ```rust,ignore
 /// let request = Request::new(LoginRequest {
 ///     email: "user@example.com".to_string(),
 ///     password: "password123!".to_string()

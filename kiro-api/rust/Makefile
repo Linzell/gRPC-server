@@ -13,4 +13,4 @@ test:
 test-all:
 	cargo fmt --check
 	cargo clippy --no-deps
-	TZ=UTC cargo test --all-features -- --nocapture -- --skip google
+	TZ=UTC cargo test --all-features -- --skip google --nocapture

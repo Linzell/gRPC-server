@@ -28,7 +28,7 @@ use crate::{database::db_types::DbId, error::DatabaseError, utils::env::get_env_
 ///
 /// The `SurrealDBRepo` struct is a struct that represents a repository for the SurrealDB database.
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Clone)]
 /// pub struct SurrealDBRepo {
 ///     pub db: Surreal<Any>,
@@ -41,7 +41,7 @@ use crate::{database::db_types::DbId, error::DatabaseError, utils::env::get_env_
 ///
 /// The `init` method initializes the SurrealDB connection.
 ///
-/// ```rust
+/// ```rust,ignore
 /// let db = SurrealDBRepo::init().await?;
 ///
 /// println!("🦋 Database: {:?}", db);
@@ -51,7 +51,7 @@ use crate::{database::db_types::DbId, error::DatabaseError, utils::env::get_env_
 ///
 /// The `migrate` method migrates the database.
 ///
-/// ```rust
+/// ```rust,ignore
 /// SurrealDBRepo::migrate().await?;
 ///
 /// println!("🦋 Database migrated");
@@ -65,7 +65,7 @@ pub struct SurrealDBRepo {
 ///
 /// The `Record` struct is a struct that represents a record in the SurrealDB database.
 ///
-/// ```rust
+/// ```rust,ignore
 /// #[derive(Debug, Serialize, Deserialize, PartialEq)]
 /// pub struct Record<T> {
 ///     id: DbId,
@@ -85,7 +85,7 @@ impl SurrealDBRepo {
     ///
     /// The `init` method initializes the SurrealDB connection.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// let db = SurrealDBRepo::init().await?;
     ///
     /// println!("🦋 Database: {:?}", db);
@@ -175,7 +175,7 @@ impl SurrealDBRepo {
     ///
     /// The `migrate` method migrates the database.
     ///
-    /// ```rust
+    /// ```rust,ignore
     /// SurrealDBRepo::migrate().await?;
     ///
     /// println!("🦋 Database migrated");

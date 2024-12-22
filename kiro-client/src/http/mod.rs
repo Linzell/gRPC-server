@@ -16,8 +16,8 @@
 
 #[cfg(feature = "auth")]
 mod auth;
-#[cfg(feature = "user")]
-mod user;
+// #[cfg(feature = "user")]
+// mod user;
 
 /// # Auth HTTP1 Routes
 ///
@@ -25,8 +25,8 @@ mod user;
 #[cfg(feature = "auth")]
 pub use auth::auth_routes;
 
-/// # User HTTP1 Routes
-///
-/// The user module provides HTTP1 routes for the user service.
-#[cfg(feature = "user")]
-pub use user::user_routes;
+// /// # User HTTP1 Routes
+// ///
+// /// The user module provides HTTP1 routes for the user service.
+// #[cfg(feature = "user")]
+// pub use user::user_routes;

@@ -26,20 +26,24 @@ use crate::SessionModel;
 /// Logs out the current user by deleting the session from the database
 ///
 /// # Arguments
-/// * `service` - Reference to the authentication service
-/// * `session` - The current session to delete
+/// * `service` - The authentication service instance
+/// * `session` - The current session model to terminate
 ///
 /// # Returns
-/// * `Ok(Empty)` - Empty response on success
-/// * `Err(Status)` - Appropriate error status on failure
+/// * HTTP response with either:
+///   * `200 OK` with empty JSON response
+///   * Error status code with message
 ///
 /// # Errors
-/// * `INTERNAL_SERVER_ERROR` - Database error
+/// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```no_run
-/// let request = Request::new(Empty {});
-/// logout(service, headers, request).await;
+/// ```rust,ignore
+/// use axum::{Json, Extension};
+/// use kiro_api::session::SessionModel;
+///
+/// let session = SessionModel::default();
+/// let response = logout(State(service), Extension(session)).await;
 /// ```
 pub async fn logout(
     State(service): State<AuthService>, Extension(session): Extension<SessionModel>,

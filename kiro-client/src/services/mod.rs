@@ -16,8 +16,8 @@
 
 #[cfg(feature = "auth")]
 mod auth;
-#[cfg(feature = "user")]
-mod user;
+// #[cfg(feature = "user")]
+// mod user;
 
 /// # Auth Services
 ///
@@ -25,8 +25,8 @@ mod user;
 #[cfg(feature = "auth")]
 pub use auth::AuthService;
 
-/// # User Services
-///
-/// The user module provides services for users.
-#[cfg(feature = "user")]
-pub use user::UserService;
+// /// # User Services
+// ///
+// /// The user module provides services for users.
+// #[cfg(feature = "user")]
+// pub use user::UserService;

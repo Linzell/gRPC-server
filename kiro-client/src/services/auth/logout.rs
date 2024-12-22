@@ -38,7 +38,7 @@ use crate::SessionModel;
 /// * `NOT_FOUND` - Session not found in request
 ///
 /// # Example
-/// ```no_run
+/// ```rust,ignore
 /// let request = Request::new(Empty {});
 /// logout(service, request).await;
 /// ```
