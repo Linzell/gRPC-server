@@ -28,10 +28,7 @@ use tracing::{debug, error, Span};
 
 use crate::config::{ErrorContext, ErrorSeverity, LoggingConfig};
 #[cfg(feature = "mailer")]
-use crate::{
-    config::{ErrorContext, ErrorSeverity, LoggingConfig},
-    utils::error_mailer::ErrorMailer,
-};
+use crate::utils::error_mailer::ErrorMailer;
 
 const AUTH_HEADER: &str = "authorization";
 

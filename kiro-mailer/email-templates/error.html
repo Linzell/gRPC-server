@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backend Error Notification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      background-color: #f0f0f0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      color: #d9534f;
+      border-bottom: 2px solid #d9534f;
+      padding-bottom: 10px;
+    }
+
+    .info {
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+    .error-details {
+      background-color: #f9f9f9;
+      border-left: 4px solid #d9534f;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stack-trace {
+      background-color: #f1f3f5;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      font-size: 0.9em;
+      overflow-x: auto;
+    }
+
+    .action-required {
+      background-color: #e9ecef;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+
+    .footer {
+      margin-top: 30px;
+      font-size: 0.9em;
+      text-align: center;
+      color: #777;
+      border-top: 1px solid #ddd;
+      padding-top: 20px;
+    }
+
+    .error-source, .request-details {
+      background-color: #f1f3f5;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Backend Error Alert</h2>
+    <p class="info">An error has occurred in the backend services, requiring immediate attention.</p>
+
+    <div class="error-details">
+      <p><strong>Environment:</strong> ${{ERROR_ENVIRONMENT}}</p>
+      <p><strong>Severity:</strong> ${{ERROR_SEVERITY}}</p>
+      <p><strong>Service:</strong> ${{ERROR_SERVICE}}</p>
+      <p><strong>Method:</strong> ${{ERROR_METHOD}}</p>
+      <p><strong>Error Type:</strong> ${{ERROR_TYPE}}</p>
+      <p><strong>Cause:</strong> ${{ERROR_CAUSE}}</p>
+      <p><strong>Message:</strong> ${{ERROR_MSG}}</p>
+      <p><strong>Request ID:</strong> ${{ERROR_REQUEST_ID}}</p>
+      <p><strong>Timestamp:</strong> ${{ERROR_DATE}}</p>
+    </div>
+
+    <h3>Error Source:</h3>
+    <div class="error-source">
+      ${{ERROR_SOURCE}}
+    </div>
+
+    <h3>Request Details:</h3>
+    <div class="request-details">
+      ${{ERROR_DETAILS}}
+    </div>
+
+    <h3>Stack Trace:</h3>
+    <div class="stack-trace">
+      ${{STACK_TRACE}}
+    </div>
+
+    <div class="action-required">
+      <h3>Action Required:</h3>
+      <ol>
+        <li>Review error details and request context</li>
+        <li>Investigate root cause in service: ${{ERROR_SERVICE}}</li>
+        <li>Check method implementation: ${{ERROR_METHOD}}</li>
+        <li>Verify error handling for error type: ${{ERROR_TYPE}}</li>
+        <li>Update error tracking system with findings</li>
+        <li>Implement fix and deploy to ${{ERROR_ENVIRONMENT}}</li>
+        <li>Verify resolution and update status</li>
+      </ol>
+    </div>
+
+    <div class="footer">
+      <p>Environment: ${{ERROR_ENVIRONMENT}} | Service: ${{ERROR_SERVICE}} | Request ID: ${{ERROR_REQUEST_ID}}</p>
+      <p>This is an automated message from ${{ERROR_SERVER_OWNER}}. Please do not reply to this email.</p>
+      <p>For urgent matters, contact: ${{ERROR_SUPPORT_EMAIL}}</p>
+    </div>
+  </div>
+</body>
+
+</html>

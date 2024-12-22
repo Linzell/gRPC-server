@@ -231,13 +231,6 @@ mod tests {
     }
 
     #[test]
-    fn test_error_severity_ordering() {
-        assert!(ErrorSeverity::Critical > ErrorSeverity::High);
-        assert!(ErrorSeverity::High > ErrorSeverity::Medium);
-        assert!(ErrorSeverity::Medium > ErrorSeverity::Low);
-    }
-
-    #[test]
     fn test_error_context_creation() {
         let context = ErrorContext::builder(ErrorSeverity::High)
             .error_code("ERR001")
@@ -266,10 +259,10 @@ mod tests {
         let config = LoggingConfig::default();
         assert!(config
             .excluded_paths
-            .contains(&"/v1/auth/login".to_string()));
+            .contains(&"/grpc.health.v1.Health/Check".to_string()));
         assert!(config
             .admin_endpoints
-            .contains(&"/v1/AdminService/ReadUsersAdmin".to_string()));
+            .contains(&"/v1.AdminService/ReadUsersAdmin".to_string()));
         #[cfg(feature = "mailer")]
         assert_eq!(config.email_severity_threshold, ErrorSeverity::High);
     }

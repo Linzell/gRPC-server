@@ -25,3 +25,9 @@ pub mod grpc_utils;
 /// The telemetry module provides distributed tracing functionality.
 #[cfg(feature = "tracing")]
 pub mod telemetry;
+
+/// # Error Mailer
+///
+/// The error_mailer module handles sending error notifications via email.
+#[cfg(feature = "mailer")]
+pub mod error_mailer;
