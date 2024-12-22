@@ -13,7 +13,7 @@ default = ["tracing", "surrealdb", "auth"]
 
 auth = ["kiro_client/auth"]
 client = ["kiro_client/user"]
-mailer = ["dep:uuid"]
+mailer = ["dep:uuid", "kiro_mailer"]
 
 tracing = [
     "opentelemetry",
@@ -36,9 +36,11 @@ kiro_database = { workspace = true, optional = true }
 chrono = { workspace = true }
 dotenv = { workspace = true }
 
-# Dependencies for the HTTP client
+# Dependencies for the server
 async-stream = { workspace = true }
 async-trait = { workspace = true }
+axum = { workspace = true, features = ["http1", "http2", "tokio"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
 http = { workspace = true }
 futures = { workspace = true }
 reqwest = { workspace = true, features = [
@@ -50,10 +52,6 @@ reqwest = { workspace = true, features = [
 tokio = { workspace = true, features = ["full", "signal"] }
 tokio-util = { workspace = true }
 tokio-stream = { workspace = true }
-
-# Dependencies for the gRPC server
-axum = { workspace = true, features = ["http1", "http2", "tokio"] }
-axum-server = { version = "0.7", features = ["tls-rustls"] }
 tonic = { workspace = true, features = [
     "router",
     "transport",
@@ -86,6 +84,7 @@ thiserror = { workspace = true }
 uuid = { version = "1.9.1", default-features = false, features = [
     "v4",
 ], optional = true }
+kiro_mailer = { workspace = true, optional = true }
 
 # Optional dependencies
 ## Client dependencies

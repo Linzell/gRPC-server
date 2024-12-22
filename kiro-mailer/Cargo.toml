@@ -1,6 +1,6 @@
 [package]
-name = "kiro_client"
-description = "The client library"
+name = "kiro_mailer"
+description = "The mailer library"
 version = "0.0.2"
 authors = ["Charlie Cohen <linzellart@gmail.com>"]
 homepage = "https://github.com/Linzell/API-Client"
@@ -11,37 +11,26 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["tracing"]
+default = ["email", "tracing"]
 
-auth = ["mailer"]
-user = []
-
-mailer = ["kiro_mailer/client", "kiro_mailer/mock"]
+client = []
+group = []
+email = ["dep:lettre"]
+mock = []
 
 tracing = ["dep:tracing"]
 
 [dependencies]
 # General dependencies
-kiro_api = { workspace = true, features = ["json", "auth", "client"] }
 kiro_database = { workspace = true, features = ["surrealdb"] }
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-# Crypto dependencies
-argon2 = { version = "0.5.3" }
-once_cell = { version = "1.20.2" }
-aes-gcm = { version = "0.10.1" }
-base64 = { version = "0.21.0" }
-rand = { workspace = true }
-rand_core = { version = "0.6.4", features = ["std"] }
-
 # Dependencies for the server
-axum = { workspace = true, features = ["json"] }
-http = { workspace = true }
+async-trait = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 tonic = { workspace = true }
-tower = { workspace = true, features = ["util"] }
 
 # Dependencies for the error handling
 thiserror = { workspace = true }
@@ -50,8 +39,17 @@ thiserror = { workspace = true }
 mockall = { workspace = true }
 
 # Optional dependencies
-## Mailer dependencies
-kiro_mailer = { workspace = true, optional = true }
+## Email dependencies
+lettre = { workspace = true, features = [
+    "builder",
+    "hostname",
+    "smtp-transport",
+    "tokio1",
+    "tokio1-rustls-tls",
+    "file-transport",
+    "serde",
+    "tracing",
+], optional = true }
 
 # Optional dependencies
 ## Dependencies for tracing

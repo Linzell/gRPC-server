@@ -334,8 +334,8 @@ mod tests {
             is_admin: false,
         }
     }
-    #[test]
 
+    #[test]
     fn test_model_conversions() {
         let user_model = create_test_user();
 
