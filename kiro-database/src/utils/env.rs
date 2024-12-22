@@ -16,29 +16,30 @@
 
 use std::{collections::HashMap, env};
 
-/// # Get envv
+/// Returns a HashMap containing all environment variables.
 ///
-/// The `get_envv` method returns a HashMap of environment variables.
+/// # Examples
 ///
 /// ```rust
+/// use kiro_database::get_envv;
 /// let envv = get_envv();
-///
-/// println!("🔧 Enviroment variables: {
-///  #envv
-/// }");
+/// println!("Environment variables: {:?}", envv);
 /// ```
-fn get_envv() -> HashMap<String, String> {
+pub fn get_envv() -> HashMap<String, String> {
     env::vars().collect()
 }
 
-/// # Get env or
+/// Returns the value of an environment variable or a default value if not found.
 ///
-/// The `get_env_or` method returns either the value of an environment variable or the default provided.
+/// # Arguments
+///
+/// * `key` - The environment variable name to look up
+/// * `default` - The default value to return if variable is not found
+///
+/// # Examples
 ///
 /// ```rust
-/// let value = get_env_or("KEY", "default");
-///
-/// println!("🔑 Value: {:?}", value);
+/// let value = kiro_database::get_env_or("DATABASE_URL", "postgres://localhost/db");
 /// ```
 pub fn get_env_or(key: &str, default: &str) -> String {
     let envv = get_envv();
@@ -50,16 +51,21 @@ pub fn get_env_or(key: &str, default: &str) -> String {
     }
 }
 
-/// # Get env unsafe
+/// Returns the value of an environment variable, panicking if not found.
 ///
-/// The `get_env_unsafe` method returns the value of an environment variable.
+/// # Arguments
 ///
-/// **<!> Note: The method panics if the variable does not exist.**
+/// * `key` - The environment variable name to look up
 ///
-/// ```rust
-/// let value = get_env_unsafe("KEY");
+/// # Panics
 ///
-/// println!("🔑 Value: {:?}", value);
+/// Panics if the specified environment variable is not set.
+///
+/// # Examples
+///
+/// ```rust,should_panic
+/// use kiro_database::get_env_unsafe;
+/// let database_url = get_env_unsafe("DATABASE_URL");
 /// ```
 pub fn get_env_unsafe(key: &str) -> String {
     let envv = get_envv();

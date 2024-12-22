@@ -15,9 +15,13 @@
 // limitations under the License.
 
 mod error;
+#[cfg(any(feature = "auth", feature = "user"))]
 mod http;
+#[cfg(any(feature = "auth", feature = "user"))]
 mod models;
+#[cfg(any(feature = "auth", feature = "user"))]
 mod services;
+#[cfg(any(feature = "auth", feature = "user"))]
 mod utils;
 
 /// # Session Models
@@ -29,6 +33,7 @@ pub use models::{CreateSessionModel, SessionModel};
 /// # User Models
 ///
 /// The user module provides models for users.
+#[cfg(any(feature = "auth", feature = "user"))]
 pub use models::{
     CreateUserModel, Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme,
     UserModel, UserSettings,

@@ -51,4 +51,4 @@ pub use database::{DbDateTime, DbId, DbIdentifier};
 /// # Utils Module
 ///
 /// The utils module provides utility functions for the database.
-pub use utils::{env::get_env_or, env::get_env_unsafe};
+pub use utils::{env::get_env_or, env::get_env_unsafe, env::get_envv};

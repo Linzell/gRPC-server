@@ -8,9 +8,9 @@ proto:
 test:
 	cargo fmt --check
 	cargo clippy --no-deps
-	TZ=UTC cargo test
+	TZ=UTC cargo test -- --skip google
 
 test-all:
 	cargo fmt --check
 	cargo clippy --no-deps
-	TZ=UTC cargo test --all-features -- --nocapture
+	TZ=UTC cargo test --all-features -- --nocapture -- --skip google

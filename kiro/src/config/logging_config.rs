@@ -14,9 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "mailer")]
-use uuid;
-
 /// Error severity levels for logging and notifications
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ErrorSeverity {

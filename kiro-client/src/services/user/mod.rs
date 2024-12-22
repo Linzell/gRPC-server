@@ -34,9 +34,9 @@ use kiro_api::{
 };
 use kiro_database::db_bridge::Database;
 
-mod login;
-mod logout;
-mod register;
+// mod login;
+// mod logout;
+// mod register;
 
 /// The main authentication service implementation
 #[derive(Clone)]
@@ -76,7 +76,8 @@ impl auth_service_server::AuthService for AuthService {
     /// # Returns
     /// A new session if login is successful
     async fn login(&self, request: Request<AuthRequest>) -> Result<Response<Session>, Status> {
-        login::login(self, request).await
+        // login::login(self, request).await
+        unimplemented!()
     }
 
     /// Handles user logout requests
@@ -87,7 +88,8 @@ impl auth_service_server::AuthService for AuthService {
     /// # Returns
     /// Empty response on successful logout
     async fn logout(&self, request: Request<Empty>) -> Result<Response<Empty>, Status> {
-        logout::logout(self, request).await
+        // logout::logout(self, request).await
+        unimplemented!()
     }
 
     /// Handles new user registration
@@ -98,7 +100,8 @@ impl auth_service_server::AuthService for AuthService {
     /// # Returns
     /// A new session for the registered user
     async fn register(&self, request: Request<AuthRequest>) -> Result<Response<Session>, Status> {
-        register::register(self, request).await
+        // register::register(self, request).await
+        unimplemented!()
     }
 }
 

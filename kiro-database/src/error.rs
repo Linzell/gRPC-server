@@ -30,6 +30,7 @@ pub enum DatabaseError {
     #[error("SurrealDB error: {0}")]
     SurrealDB(#[from] surrealdb::Error),
 
+    #[cfg(feature = "surrealdb")]
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
