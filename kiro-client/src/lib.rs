@@ -45,6 +45,12 @@ pub use models::{
 #[cfg(feature = "auth")]
 pub use services::AuthService;
 
+/// # User Services
+///
+/// The user module provides services for users.
+#[cfg(feature = "user")]
+pub use services::ClientService;
+
 /// # Auth HTTP1 Routes
 ///
 /// The auth module provides HTTP1 routes for the authentication service.

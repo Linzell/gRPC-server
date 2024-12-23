@@ -11,9 +11,9 @@ publish = false
 
 [features]
 default = ["api", "json"]
+
 api = ["tonic/transport", "tonic-build/transport", "tokio"]
 json = ["pbjson", "pbjson-types", "serde"]
-
 auth = []
 client = []
 group = []
@@ -22,18 +22,25 @@ postgres = ["dep:diesel"]
 surrealdb = []
 
 [dependencies]
+# General dependencies
+serde = { workspace = true, optional = true }
+pbjson = { version = "0.7", optional = true }
+pbjson-types = { version = "0.7", optional = true }
+
+# Proto dependencies
 prost = { version = "0.13" }
 prost-types = { version = "0.13" }
 
-diesel = { workspace = true, features = ["postgres_backend"], optional = true }
-pbjson = { version = "0.7", optional = true }
-pbjson-types = { version = "0.7", optional = true }
-serde = { workspace = true, optional = true }
+# Dependencies for the server
 tonic = { workspace = true, default-features = false, features = [
     "codegen",
     "prost",
 ], optional = true }
 tokio = { workspace = true, features = ["macros"], optional = true }
+
+# Optional dependencies
+## Dependencies for database backends
+diesel = { workspace = true, features = ["postgres_backend"], optional = true }
 
 [build-dependencies]
 pbjson-build = { version = "0.7" }

@@ -40,7 +40,9 @@ rand_core = { version = "0.6.4", features = ["std"] }
 # Dependencies for the server
 axum = { workspace = true, features = ["json"] }
 http = { workspace = true }
+futures = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
+tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tower = { workspace = true, features = ["util"] }
 
