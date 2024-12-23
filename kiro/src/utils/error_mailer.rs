@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn test_get_recipient() {
         let mailer = ErrorMailer::new(create_test_config(Environment::Production));
-        assert_eq!(mailer.get_recipient(), "support@digitalkin.ai");
+        assert_eq!(mailer.get_recipient(), "test@email.com");
 
         let development_mailer = ErrorMailer::new(create_test_config(Environment::Development));
         assert_eq!(development_mailer.get_recipient(), "user");
