@@ -15,7 +15,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use kiro_database::get_env_unsafe;
+use kiro_database::get_env_or;
 use lettre::{
     message::{header::ContentType, IntoBody},
     transport::smtp::{
@@ -64,9 +64,9 @@ impl Default for Mailer {
 #[async_trait]
 impl MailerTrait for Mailer {
     fn new() -> Self {
-        let smtp_host = get_env_unsafe("SMTP_HOST");
-        let smtp_user = get_env_unsafe("SMTP_USER");
-        let smtp_pass = get_env_unsafe("SMTP_PASS");
+        let smtp_host = get_env_or("SMTP_HOST", "smtp.service.com");
+        let smtp_user = get_env_or("SMTP_USER", "test@example.com");
+        let smtp_pass = get_env_or("SMTP_PASS", "your_smtp_password");
 
         let creds = Credentials::new(smtp_user, smtp_pass);
 

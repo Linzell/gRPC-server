@@ -1,9 +1,9 @@
-# 🚀 API-Client
+# 🚀 gRPC-server
 
-API-Client is a powerful and flexible gRPC server designed to seamlessly interact with the [Service Proto](https://github.com/Linzell/SRC-Proto). This project provides a robust interface for communication between clients and the Service Proto, enabling efficient and streamlined data exchange.
+gRPC-server is a powerful and flexible gRPC server designed to seamlessly interact with the [Service Proto](https://github.com/Linzell/SRC-Proto). This project provides a robust interface for communication between clients and the Service Proto, enabling efficient and streamlined data exchange.
 
-[![CI](https://github.com/Linzell/API-Client/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Linzell/API-Client/actions/workflows/CI.yml)
-[![codecov](https://codecov.io/gh/Linzell/API-Client/branch/main/graph/badge.svg?token=4TBIXUE2YV)](https://codecov.io/gh/Linzell/API-Client)
+[![CI](https://github.com/Linzell/gRPC-server/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/Linzell/gRPC-server/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/Linzell/gRPC-server/branch/main/graph/badge.svg?token=4TBIXUE2YV)](https://codecov.io/gh/Linzell/gRPC-server)
 
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![gRPC](https://img.shields.io/badge/gRPC-244c5a?style=for-the-badge&logo=grpc&logoColor=white)](https://grpc.io/)
@@ -22,13 +22,30 @@ Create a `.env` file in the project root with these variables:
 
 ```bash
 # Server Configuration
-PORT=3000
-FRONT_CONNECT_URL=http://localhost:5173
-CERT_PEM_URL="certs/cert.pem"
-KEY_PEM_URL="certs/key.pem"
-JAEGER_AGENT_HOST="http://localhost:4317"
+ENVIRONMENT="local" # Current environment (Use in Jaeger, to dif`ferentiate between environments)
+HTTP_PORT=3080 # HTTP port (Redirects to HTTPS)
+HTTPS_PORT=3000 # HTTPS port
+FRONT_URL="http://localhost:5173" # Your front-end URL
+JAEGER_AGENT_HOST="http://localhost:4317" # Jaeger agent host
 
-# Add any other necessary environment variables
+# AWS S3
+AWS_S3_BUCKET_NAME="your-bucket" # Your S3 bucket name
+AWS_REGION="eu-west-3" # Your AWS region
+
+# Mailer
+SMTP_HOST="smtp.service.com" # Your SMTP host
+SMTP_USER="test@example.com" # Your SMTP user
+SMTP_PASS="your_smtp_password" # Your SMTP password
+
+# SurrealDB
+SURREAL_LOG_LEVEL=info # [possible values: none,full, error, warn, info, debug, trace]
+SURREAL_ADDRESS=172.17.0.1 # Docker host IP
+SURREAL_PORT=8000 # Docker host port
+SURREAL_DB_HOST="ws://${SURREAL_ADDRESS}:${SURREAL_PORT}" # SurrealDB host
+SURREAL_USER=root # SurrealDB user
+SURREAL_PASS=Ap@ssw0rdStr0ng3rTh@nTh3D3v1l # SurrealDB password, needs to be strong
+SURREAL_NAMESPACE=kiro # SurrealDB namespace
+SURREAL_DATABASE=client # SurrealDB database
 ```
 
 ## 🚀 Getting Started
