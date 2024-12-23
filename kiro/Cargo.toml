@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["tracing", "surrealdb", "auth", "mailer"]
+default = ["tracing", "surrealdb", "auth", "client", "mailer"]
 
 auth = ["kiro_client/auth"]
 client = ["kiro_client/user"]

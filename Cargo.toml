@@ -6,6 +6,7 @@ members = [
     "kiro-client",
     "kiro-database",
     "kiro-mailer",
+    "kiro-storage",
 ]
 
 [profile.release]
@@ -23,6 +24,7 @@ kiro_api = { path = "./kiro-api/rust" }
 kiro_client = { path = "./kiro-client" }
 kiro_database = { path = "./kiro-database" }
 kiro_mailer = { path = "./kiro-mailer" }
+kiro_storage = { path = "./kiro-storage" }
 
 # Global dependencies
 chrono = { version = "0.4.38", default-features = false }
