@@ -24,13 +24,13 @@ use std::io;
 use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-#[cfg(feature = "auth")]
+#[cfg(feature = "client")]
 use kiro_client::{auth_routes, AuthService, AuthServiceServer};
 
 // #[cfg(feature = "client")]
 // use kiro_client::{ClientService, ClientServiceServer};
 
-#[cfg(feature = "auth")]
+#[cfg(feature = "client")]
 use crate::middleware::auth::auth_layer;
 // #[cfg(feature = "client")]
 // use crate::middleware::client::ClientService;
@@ -54,7 +54,7 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     // health_reporter
     //     .set_serving::<AdminServiceServer<AdminService>>()
     //     .await;
-    #[cfg(feature = "auth")]
+    #[cfg(feature = "client")]
     health_reporter
         .set_serving::<AuthServiceServer<AuthService>>()
         .await;
@@ -100,7 +100,7 @@ pub async fn create_app(
     let cors = setup_cors(config.clone())?;
     let routes_builder = setup_routes(db.clone()).await?.routes().into_axum_router();
 
-    #[cfg(feature = "auth")]
+    #[cfg(feature = "client")]
     let routes_builder = routes_builder.layer(auth_layer(db.clone()));
 
     #[cfg(feature = "tracing")]
@@ -111,7 +111,7 @@ pub async fn create_app(
         .route("/health", get(health::health_check))
         .route("/", get(|| async { "Hello, World!" }));
 
-    #[cfg(feature = "auth")]
+    #[cfg(feature = "client")]
     let routes_builder = routes_builder.nest("/auth", auth_routes(db));
 
     Ok(routes_builder)
@@ -178,7 +178,7 @@ async fn setup_routes(
         .add_service(reflection_service)
         .add_service(tonic_web::enable(health_service));
 
-    #[cfg(feature = "auth")]
+    #[cfg(feature = "client")]
     routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
     // #[cfg(feature = "client")]
     // routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));

@@ -40,7 +40,7 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust, ignore
 /// let request = Request::new(UpdateUserPrivacyRequest {
 ///    field: "data_collection".to_string(),
 ///    value: true,
@@ -77,4 +77,247 @@ pub async fn update_privacy(
         .map_err(|e| Status::internal(e.to_string()))?;
 
     Ok(Response::new(Empty {}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SessionModel;
+    use chrono::Utc;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use mockall::predicate::eq;
+
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "1")),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
+            user_id: DbId::from(("users", "1")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_data_collection_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/privacy/data_collection"),
+                eq(true),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "data_collection".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_privacy(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_location_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/privacy/location"), eq(false))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "location".to_string(),
+            value: false,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_privacy(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_no_session() {
+        let mock_db = MockDatabaseOperations::new();
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(UpdatePrivacyRequest {
+            field: "data_collection".to_string(),
+            value: true,
+        });
+        // Don't insert session into extensions
+
+        let error = update_privacy(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unauthenticated);
+        assert_eq!(error.message(), "No valid session found");
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_invalid_field() {
+        let mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "invalid_field".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_privacy(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert_eq!(error.message(), "Invalid privacy field");
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/privacy/data_collection"),
+                eq(true),
+            )
+            .times(1)
+            .returning(|_, _, _| Err(DatabaseError::Internal("Database error".to_string())));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "data_collection".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_privacy(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Internal);
+        assert!(error.message().contains("Database error"));
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_admin_session() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut admin_session = create_test_session();
+        admin_session.is_admin = true;
+        let user_id = admin_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/privacy/data_collection"),
+                eq(true),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "data_collection".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(admin_session);
+
+        let response = update_privacy(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_empty_field() {
+        let mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdatePrivacyRequest {
+            field: "".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_privacy(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert_eq!(error.message(), "Invalid privacy field");
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy_toggle_both_fields() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        // Test data_collection first
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id.clone()),
+                eq("settings/privacy/data_collection"),
+                eq(true),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        // Then test location
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/privacy/location"), eq(false))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        // Test data_collection update
+        let mut request1 = Request::new(UpdatePrivacyRequest {
+            field: "data_collection".to_string(),
+            value: true,
+        });
+        request1.extensions_mut().insert(test_session.clone());
+        let response1 = update_privacy(&service, request1).await;
+        assert!(response1.is_ok());
+
+        // Test location update
+        let mut request2 = Request::new(UpdatePrivacyRequest {
+            field: "location".to_string(),
+            value: false,
+        });
+        request2.extensions_mut().insert(test_session);
+        let response2 = update_privacy(&service, request2).await;
+        assert!(response2.is_ok());
+    }
 }

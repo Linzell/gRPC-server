@@ -43,7 +43,9 @@ use kiro_database::db_bridge::Database;
 mod delete_user;
 mod disable_user;
 mod read_user;
+#[cfg(feature = "mailer")]
 mod send_email_to_change_email;
+#[cfg(feature = "mailer")]
 mod send_email_to_change_password;
 mod update_email;
 mod update_language;
@@ -52,6 +54,7 @@ mod update_password;
 mod update_privacy;
 mod update_security;
 mod update_theme;
+#[cfg(feature = "storage")]
 mod upload_avatar;
 
 /// The main authentication service implementation
@@ -101,19 +104,21 @@ impl client_service_server::ClientService for ClientService {
     }
 
     async fn send_email_to_change_email(
-        &self, request: Request<Empty>,
+        &self, #[cfg(feature = "mailer")] request: Request<Empty>,
+        #[cfg(not(feature = "mailer"))] _request: Request<Empty>,
     ) -> Result<Response<Empty>, Status> {
         #[cfg(not(feature = "mailer"))]
-        Err(Status::unimplemented("Email functionality is disabled"));
+        unimplemented!("Email functionality is disabled");
         #[cfg(feature = "mailer")]
         send_email_to_change_email::send_email_to_change_email(self, request).await
     }
 
     async fn send_email_to_change_password(
-        &self, request: Request<Empty>,
+        &self, #[cfg(feature = "mailer")] request: Request<Empty>,
+        #[cfg(not(feature = "mailer"))] _request: Request<Empty>,
     ) -> Result<Response<Empty>, Status> {
         #[cfg(not(feature = "mailer"))]
-        Err(Status::unimplemented("Email functionality is disabled"));
+        unimplemented!("Email functionality is disabled");
         #[cfg(feature = "mailer")]
         send_email_to_change_password::send_email_to_change_password(self, request).await
     }
@@ -131,10 +136,11 @@ impl client_service_server::ClientService for ClientService {
     }
 
     async fn upload_avatar(
-        &self, request: Request<UploadAvatarRequest>,
+        &self, #[cfg(feature = "storage")] request: Request<UploadAvatarRequest>,
+        #[cfg(not(feature = "storage"))] _request: Request<UploadAvatarRequest>,
     ) -> Result<Response<UploadAvatarResponse>, Status> {
         #[cfg(not(feature = "storage"))]
-        Err(Status::unimplemented("Storage functionality is disabled"));
+        unimplemented!("Storage functionality is disabled");
         #[cfg(feature = "storage")]
         upload_avatar::upload_avatar(self, request).await
     }

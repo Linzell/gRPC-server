@@ -9,11 +9,11 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["tracing", "surrealdb", "auth", "client", "mailer"]
+default = ["tracing", "surrealdb", "client"]
 
-auth = ["kiro_client/auth"]
-client = ["kiro_client/user"]
-mailer = ["dep:uuid", "kiro_mailer"]
+client = ["kiro_client"]
+mailer = ["dep:uuid", "kiro_mailer", "kiro_client/mailer"]
+storage = []
 
 tracing = [
     "opentelemetry",

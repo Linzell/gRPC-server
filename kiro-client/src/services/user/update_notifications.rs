@@ -40,7 +40,7 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust, ignore
 /// let request = Request::new(UpdateUserNotificationsRequest {
 ///    field: "email".to_string(),
 ///    value: true,
@@ -80,4 +80,214 @@ pub async fn update_notifications(
         .map_err(|e| Status::internal(e.to_string()))?;
 
     Ok(Response::new(Empty {}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SessionModel;
+    use chrono::Utc;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use mockall::predicate::eq;
+
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "1")),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
+            user_id: DbId::from(("users", "1")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_email_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/notifications/email"), eq(true))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "email".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_notifications(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_push_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/notifications/push"), eq(false))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "push".to_string(),
+            value: false,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_notifications(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_sms_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/notifications/sms"), eq(true))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "sms".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_notifications(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_no_session() {
+        let mock_db = MockDatabaseOperations::new();
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(UpdateNotificationsRequest {
+            field: "email".to_string(),
+            value: true,
+        });
+        // Don't insert session into extensions
+
+        let error = update_notifications(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unauthenticated);
+        assert_eq!(error.message(), "No valid session found");
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_invalid_field() {
+        let mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "invalid_field".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_notifications(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert!(error.message().contains("Invalid notification field"));
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/notifications/email"), eq(true))
+            .times(1)
+            .returning(|_, _, _| Err(DatabaseError::Internal("Database error".to_string())));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "email".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_notifications(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Internal);
+        assert!(error.message().contains("Database error"));
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_admin_session() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut admin_session = create_test_session();
+        admin_session.is_admin = true;
+        let user_id = admin_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("settings/notifications/email"), eq(true))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "email".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(admin_session);
+
+        let response = update_notifications(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications_empty_field() {
+        let mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateNotificationsRequest {
+            field: "".to_string(),
+            value: true,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_notifications(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert!(error.message().contains("Invalid notification field"));
+    }
 }

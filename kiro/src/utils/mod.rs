@@ -17,7 +17,7 @@
 /// # gRPC Utilities
 ///
 /// The gRPC utilities module provides helper functions for working with gRPC services.
-#[cfg(feature = "auth")]
+#[cfg(feature = "client")]
 pub mod grpc_utils;
 
 /// # Telemetry

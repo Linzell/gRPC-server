@@ -13,9 +13,6 @@ publish = false
 [features]
 default = ["tracing"]
 
-auth = ["mailer"]
-user = ["storage"]
-
 mailer = ["kiro_mailer/client", "kiro_mailer/mock"]
 storage = ["kiro_storage/aws", "kiro_storage/mock"]
 

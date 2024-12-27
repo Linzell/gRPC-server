@@ -14,19 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "auth")]
 mod auth;
-#[cfg(feature = "user")]
 mod user;
 
 /// # Auth Services
 ///
 /// The auth module provides services for authentication.
-#[cfg(feature = "auth")]
 pub use auth::AuthService;
 
 /// # User Services
 ///
 /// The user module provides services for users.
-#[cfg(feature = "user")]
 pub use user::ClientService;

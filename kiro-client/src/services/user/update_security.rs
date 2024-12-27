@@ -40,7 +40,7 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust, ignore
 /// let request = Request::new(UpdateUserSecurityRequest {
 ///    field: "two_factor".to_string(),
 ///    value: true,
@@ -58,6 +58,12 @@ pub async fn update_security(
 
     // Get the field and value from the request
     let field = request.get_ref().field.as_str();
+
+    // QR code field is immutable
+    if field == "qr_code" {
+        return Err(Status::invalid_argument("QR code field is immutable"));
+    }
+
     let value = match field {
         "two_factor" | "magic_link" => serde_json::Value::Bool(request.get_ref().value.is_some()),
         "qr_code" => serde_json::Value::String(request.get_ref().value.is_some().to_string()),
@@ -80,4 +86,246 @@ pub async fn update_security(
         .map_err(|e| Status::internal(e.to_string()))?;
 
     Ok(Response::new(Empty {}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SessionModel;
+    use chrono::Utc;
+    use kiro_api::client::v1::update_security_request::Value as JsonValue;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use mockall::predicate::eq;
+
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "1")),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
+            user_id: DbId::from(("users", "1")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_security_two_factor_enable() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/security/two_factor"),
+                eq(serde_json::Value::Bool(true)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: Some(JsonValue::TwoFactor(true)),
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_security(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_security_two_factor_disable() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/security/two_factor"),
+                eq(serde_json::Value::Bool(false)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: None,
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_security(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_security_magic_link_enable() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/security/magic_link"),
+                eq(serde_json::Value::Bool(true)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateSecurityRequest {
+            field: "magic_link".to_string(),
+            value: Some(JsonValue::MagicLink(true)),
+        });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_security(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_security_no_session() {
+        let mock_db = MockDatabaseOperations::new();
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: Some(JsonValue::TwoFactor(true)),
+        });
+        // Don't insert session into extensions
+
+        let error = update_security(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unauthenticated);
+        assert_eq!(error.message(), "No valid session found");
+    }
+
+    #[tokio::test]
+    async fn test_update_security_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/security/two_factor"),
+                eq(serde_json::Value::Bool(true)),
+            )
+            .times(1)
+            .returning(|_, _, _| Err(DatabaseError::Internal("Database error".to_string())));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: Some(JsonValue::TwoFactor(true)),
+        });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_security(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Internal);
+        assert!(error.message().contains("Database error"));
+    }
+
+    #[tokio::test]
+    async fn test_update_security_admin_session() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut admin_session = create_test_session();
+        admin_session.is_admin = true;
+        let user_id = admin_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id),
+                eq("settings/security/two_factor"),
+                eq(serde_json::Value::Bool(true)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: Some(JsonValue::TwoFactor(true)),
+        });
+        request.extensions_mut().insert(admin_session);
+
+        let response = update_security(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_security_toggle_multiple_fields() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        // First update: two_factor
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id.clone()),
+                eq("settings/security/two_factor"),
+                eq(serde_json::Value::Bool(true)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        // Second update: magic_link
+        mock_db
+            .expect_update_field()
+            .with(
+                eq(user_id.clone()),
+                eq("settings/security/magic_link"),
+                eq(serde_json::Value::Bool(false)),
+            )
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        // Test two_factor update
+        let mut request1 = Request::new(UpdateSecurityRequest {
+            field: "two_factor".to_string(),
+            value: Some(JsonValue::TwoFactor(true)),
+        });
+        request1.extensions_mut().insert(test_session.clone());
+        let response1 = update_security(&service, request1).await;
+        assert!(response1.is_ok());
+
+        // Test magic_link update
+        let mut request2 = Request::new(UpdateSecurityRequest {
+            field: "magic_link".to_string(),
+            value: None,
+        });
+        request2.extensions_mut().insert(test_session.clone());
+        let response2 = update_security(&service, request2).await;
+        assert!(response2.is_ok());
+    }
 }

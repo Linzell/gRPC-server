@@ -37,6 +37,7 @@ use crate::error::MailerError;
 /// ```rust
 /// #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 /// pub enum LinkType {
+///   Unimplemented,
 ///   EmailChange,
 ///   EmailReset,
 ///   PasswordChange,
@@ -48,6 +49,7 @@ use crate::error::MailerError;
 /// ```
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum LinkType {
+    Unimplemented,
     #[cfg(feature = "client")]
     EmailChange,
     #[cfg(feature = "client")]
@@ -264,6 +266,7 @@ impl LinkModel {
     #[cfg(any(feature = "client", feature = "group"))]
     pub fn construct_link(&self) -> String {
         let typestr = match self.link_type {
+            LinkType::Unimplemented => "unimplemented",
             #[cfg(feature = "client")]
             LinkType::EmailChange => "change-email",
             #[cfg(feature = "client")]
@@ -289,16 +292,21 @@ impl LinkModel {
 mod tests {
     use super::*;
     use chrono::{Duration, Utc};
+    #[cfg(any(feature = "client", feature = "group"))]
     use kiro_database::db_bridge::MockDatabaseOperations;
+    #[cfg(any(feature = "client", feature = "group"))]
     use mockall::predicate::*;
 
     /// Helper function to create a sample LinkModel for testing
+    #[cfg(any(feature = "client", feature = "group"))]
     fn create_test_link() -> LinkModel {
         LinkModel {
             id: DbId::from(("links", "123")),
             user: DbId::from(("users", "456")),
             #[cfg(any(feature = "client", feature = "group"))]
             link_type: LinkType::EmailReset,
+            #[cfg(not(any(feature = "client", feature = "group")))]
+            link_type: LinkType::Unimplemented,
             expiry: DbDateTime::from(Utc::now() + Duration::hours(24)),
         }
     }
@@ -311,6 +319,8 @@ mod tests {
             user: DbId::from(("users", "456")),
             #[cfg(any(feature = "client", feature = "group"))]
             link_type: LinkType::EmailReset,
+            #[cfg(not(any(feature = "client", feature = "group")))]
+            link_type: LinkType::Unimplemented,
             expiry: expiry.clone(),
         };
         let link2 = LinkModel {
@@ -318,6 +328,8 @@ mod tests {
             user: DbId::from(("users", "456")),
             #[cfg(any(feature = "client", feature = "group"))]
             link_type: LinkType::EmailReset,
+            #[cfg(not(any(feature = "client", feature = "group")))]
+            link_type: LinkType::Unimplemented,
             expiry,
         };
         assert_eq!(link1, link2);
@@ -330,12 +342,16 @@ mod tests {
             user: DbId::from(("users", "456")),
             #[cfg(any(feature = "client", feature = "group"))]
             link_type: LinkType::EmailReset,
+            #[cfg(not(any(feature = "client", feature = "group")))]
+            link_type: LinkType::Unimplemented,
             expiry: expiry.clone(),
         };
         let create2 = CreateLinkModel {
             user: DbId::from(("users", "456")),
             #[cfg(any(feature = "client", feature = "group"))]
             link_type: LinkType::EmailReset,
+            #[cfg(not(any(feature = "client", feature = "group")))]
+            link_type: LinkType::Unimplemented,
             expiry,
         };
         assert_eq!(create1, create2);

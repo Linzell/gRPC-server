@@ -43,9 +43,16 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Errors
 ///
-/// * `UNAUTHENTICATED` - No valid session
-/// * `INVALID_ARGUMENT` - No password provided
-/// * `INTERNAL` - Database or email sending errors
+/// Returns Status::unauthenticated if no valid session is found
+/// Returns Status::invalid_argument if no password is provided
+/// Returns Status::internal for database errors
+///
+/// # Example
+///
+/// ```rust, ignore
+/// let request = Request::new(Empty {});
+/// send_email_to_change_password(&service, request).await?;
+/// ```
 pub async fn send_email_to_change_password(
     service: &ClientService, request: Request<Empty>,
 ) -> Result<Response<Empty>, Status> {
@@ -104,3 +111,5 @@ pub async fn send_email_to_change_password(
 
     Ok(Response::new(Empty {}))
 }
+
+// TODO: Fix mailer tests Trait, before adding tests

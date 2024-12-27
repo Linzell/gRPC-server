@@ -14,19 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "auth")]
 mod auth;
-// #[cfg(feature = "user")]
 // mod user;
 
 /// # Auth HTTP1 Routes
 ///
 /// The auth module provides HTTP1 routes for the authentication service.
-#[cfg(feature = "auth")]
 pub use auth::auth_routes;
 
 // /// # User HTTP1 Routes
 // ///
 // /// The user module provides HTTP1 routes for the user service.
-// #[cfg(feature = "user")]
 // pub use user::user_routes;

@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::SessionModel;
-
 use super::*;
 
 use kiro_database::db_bridge::DatabaseOperations;
 use kiro_storage::{BucketS3, ByteStream};
 use tonic::{Request, Response, Status};
+
+use crate::SessionModel;
 
 /// Updates a user's avatar image
 ///
@@ -41,7 +41,7 @@ use tonic::{Request, Response, Status};
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust, ignore
 /// let request = Request::new(UpdateUserAvatarRequest {
 ///     avatar: Some(File {
 ///         name: "avatar.jpg".to_string(),

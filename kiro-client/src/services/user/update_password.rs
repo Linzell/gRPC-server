@@ -16,9 +16,11 @@
 
 use super::*;
 
+#[cfg(feature = "mailer")]
 use chrono::{Days, Utc};
-use kiro_database::DbId;
-use kiro_database::{db_bridge::DatabaseOperations, get_env_or};
+use kiro_database::db_bridge::DatabaseOperations;
+#[cfg(feature = "mailer")]
+use kiro_database::{get_env_or, DbId};
 use tonic::{Request, Response, Status};
 
 #[cfg(feature = "mailer")]
@@ -49,10 +51,20 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Errors
 ///
-/// * `UNAUTHENTICATED` - No valid session
-/// * `NOT_FOUND` - Invalid link or user not found
-/// * `INVALID_ARGUMENT` - Invalid old password
-/// * `INTERNAL` - Database or email errors
+/// Returns Status::unauthenticated if no valid session is found
+/// Returns Status::invalid_argument if no password is provided
+/// Returns Status::internal for database errors
+///
+/// # Example
+///
+/// ```rust, ignore
+/// let request = Request::new(UpdatePasswordRequest {
+///     temp_token,
+///     old_password,
+///     password,
+/// });
+/// update_password(&service, request).await?;
+/// ```
 pub async fn update_password(
     service: &ClientService, request: Request<UpdatePasswordRequest>,
 ) -> Result<Response<Empty>, Status> {
@@ -152,3 +164,5 @@ pub async fn update_password(
 
     Ok(Response::new(Empty {}))
 }
+
+// TODO: Fix mailer tests Trait, before adding tests

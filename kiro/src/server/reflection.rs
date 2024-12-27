@@ -19,12 +19,10 @@ use tonic_reflection::server::v1alpha::{ServerReflection, ServerReflectionServer
 pub fn setup_reflection_service() -> ServerReflectionServer<impl ServerReflection> {
     let builder = tonic_reflection::server::Builder::configure();
 
-    #[cfg(feature = "auth")]
-    let builder =
-        builder.register_encoded_file_descriptor_set(kiro_client::AUTH_V1_FILE_DESCRIPTOR_SET);
     #[cfg(feature = "client")]
-    let builder =
-        builder.register_encoded_file_descriptor_set(kiro_client::CLIENT_V1_FILE_DESCRIPTOR_SET);
+    let builder = builder
+        .register_encoded_file_descriptor_set(kiro_client::CLIENT_V1_FILE_DESCRIPTOR_SET)
+        .register_encoded_file_descriptor_set(kiro_client::AUTH_V1_FILE_DESCRIPTOR_SET);
 
     builder
         .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)

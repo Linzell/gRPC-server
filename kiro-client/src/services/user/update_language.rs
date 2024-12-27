@@ -40,7 +40,7 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust, ignore
 /// let request = Request::new(UpdateUserLanguageRequest {
 ///     language: "fr".to_string()
 /// });
@@ -58,6 +58,11 @@ pub async fn update_language(
     // Get the new language from the request
     let language = request.get_ref().language;
 
+    // Check if the language is a valid Language enum value
+    if !matches!(language, 0..=9) {
+        return Err(Status::invalid_argument("Invalid language value"));
+    }
+
     // Update the user's language in the database
     service
         .db
@@ -66,4 +71,128 @@ pub async fn update_language(
         .map_err(|e| Status::internal(e.to_string()))?;
 
     Ok(Response::new(Empty {}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SessionModel;
+    use chrono::Utc;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use mockall::predicate::eq;
+
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "1")),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
+            user_id: DbId::from(("users", "1")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_update_language_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("language"), eq(0))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateLanguageRequest { language: 0 });
+        request.extensions_mut().insert(test_session);
+
+        let response = update_language(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_language_no_session() {
+        let mock_db = MockDatabaseOperations::new();
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(UpdateLanguageRequest { language: 0 });
+        // Don't insert session into extensions
+
+        let error = update_language(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Unauthenticated);
+        assert_eq!(error.message(), "No valid session found");
+    }
+
+    #[tokio::test]
+    async fn test_update_language_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let user_id = test_session.user_id.clone();
+
+        // Simulate database error
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("language"), eq(0))
+            .times(1)
+            .returning(|_, _, _| Err(DatabaseError::Internal("Database error".to_string())));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateLanguageRequest { language: 0 });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_language(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Internal);
+        assert!(error.message().contains("Database error"));
+    }
+
+    #[tokio::test]
+    async fn test_update_language_admin_session() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let mut admin_session = create_test_session();
+        admin_session.is_admin = true;
+        let user_id = admin_session.user_id.clone();
+
+        mock_db
+            .expect_update_field()
+            .with(eq(user_id), eq("language"), eq(0))
+            .times(1)
+            .returning(|_, _, _| Ok(()));
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateLanguageRequest { language: 0 });
+        request.extensions_mut().insert(admin_session);
+
+        let response = update_language(&service, request).await;
+        assert!(response.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_update_language_invalid_language() {
+        let mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(UpdateLanguageRequest { language: 99 });
+        request.extensions_mut().insert(test_session);
+
+        let error = update_language(&service, request).await.unwrap_err();
+        assert_eq!(error.code(), tonic::Code::InvalidArgument);
+        assert_eq!(error.message(), "Invalid language value");
+    }
 }

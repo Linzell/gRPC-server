@@ -16,8 +16,11 @@
 
 use super::*;
 
+#[cfg(feature = "mailer")]
 use chrono::{Days, Utc};
-use kiro_database::{db_bridge::DatabaseOperations, get_env_or, DbId};
+use kiro_database::db_bridge::DatabaseOperations;
+#[cfg(feature = "mailer")]
+use kiro_database::{get_env_or, DbId};
 use tonic::{Request, Response, Status};
 
 #[cfg(feature = "mailer")]
@@ -47,10 +50,19 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Errors
 ///
-/// * `UNAUTHENTICATED` - No valid session
-/// * `NOT_FOUND` - Invalid temp key or user not found
-/// * `ALREADY_EXISTS` - Email already in use
-/// * `INTERNAL` - Database or email sending errors
+/// Returns Status::unauthenticated if no valid session is found
+/// Returns Status::invalid_argument if no password is provided
+/// Returns Status::internal for database errors
+///
+/// # Example
+///
+/// ```rust, ignore
+/// let request = Request::new(UpdateEmailRequest {
+///     temp_token
+///     email
+/// });
+/// update_email(&service, request).await?;
+/// ```
 pub async fn update_email(
     service: &ClientService, request: Request<UpdateEmailRequest>,
 ) -> Result<Response<Empty>, Status> {
@@ -73,17 +85,6 @@ pub async fn update_email(
         };
     }
 
-    // Get user details
-    let user = match service
-        .db
-        .select::<UserModel>(session.user_id.clone())
-        .await
-    {
-        Ok(Some(user)) => user,
-        Ok(None) => return Err(Status::not_found("User not found")),
-        Err(e) => return Err(Status::internal(format!("Database error: {}", e))),
-    };
-
     // Check if email is already used
     if UserModel::check_email(&service.db, request.email.clone()).await? {
         return Err(Status::already_exists("Email address already in use"));
@@ -98,6 +99,17 @@ pub async fn update_email(
 
     #[cfg(feature = "mailer")]
     {
+        // Get user details
+        let user = match service
+            .db
+            .select::<UserModel>(session.user_id.clone())
+            .await
+        {
+            Ok(Some(user)) => user,
+            Ok(None) => return Err(Status::not_found("User not found")),
+            Err(e) => return Err(Status::internal(format!("Database error: {}", e))),
+        };
+
         // Cleanup old change links
         LinkModel::delete_link_by_user_and_type(
             &service.db,
@@ -148,3 +160,5 @@ pub async fn update_email(
 
     Ok(Response::new(Empty {}))
 }
+
+// TODO: Fix mailer tests Trait, before adding tests

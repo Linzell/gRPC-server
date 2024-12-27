@@ -23,8 +23,11 @@ use base64::{engine::general_purpose::URL_SAFE, Engine};
 use chrono::Utc;
 use kiro_database::{
     db_bridge::{DatabaseOperations, HasId},
-    get_env_or, DatabaseError, DbDateTime, DbId,
+    DbDateTime, DbId,
 };
+#[cfg(feature = "mailer")]
+use kiro_database::{get_env_or, DatabaseError};
+
 use once_cell::sync::Lazy;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use rand_core::OsRng;
@@ -35,6 +38,7 @@ use kiro_mailer::{ContentType, Mailer, MailerTrait};
 
 use crate::error::ClientError;
 
+#[cfg(feature = "mailer")]
 use super::UserModel;
 
 static ENCRYPTION_KEY: Lazy<[u8; 32]> = Lazy::new(|| {
@@ -430,6 +434,7 @@ mod tests {
     use kiro_mailer::{Category, Code, Detail, MockMailerTrait, Response, Severity};
     use mockall::predicate::*;
 
+    #[cfg(feature = "mailer")]
     use crate::models::user_model::{
         Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
     };

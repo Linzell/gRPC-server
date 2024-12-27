@@ -17,7 +17,7 @@
 /// # Auth Middleware
 ///
 /// The auth module provides authentication middleware and session validation.
-#[cfg(feature = "auth")]
+#[cfg(feature = "client")]
 pub mod auth;
 
 /// # Logging Middleware

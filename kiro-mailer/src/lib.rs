@@ -39,6 +39,7 @@ pub use error::MailerError;
 ///
 /// The mock mailer trait provides a mock trait for testing.
 #[cfg(any(test, feature = "mock"))]
+#[cfg(any(feature = "client", feature = "group"))]
 pub use utils::MockMailerTrait;
 
 /// # Mailer Trait

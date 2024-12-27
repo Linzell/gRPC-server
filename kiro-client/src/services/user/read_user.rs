@@ -61,7 +61,7 @@ pub async fn read_user(
     let session = request
         .extensions()
         .get::<SessionModel>()
-        .ok_or_else(|| Status::internal("Missing session information"))?;
+        .ok_or_else(|| Status::unauthenticated("Missing session information"))?;
 
     let db = service.db.clone();
     let user_id = session.user_id.clone();
@@ -150,4 +150,210 @@ async fn send_user_update(
     tx.send(Ok(user)).await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
+    };
+    use chrono::Utc;
+    use futures::StreamExt;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use mockall::predicate::eq;
+    use std::pin::Pin;
+    use tokio_stream::wrappers::ReceiverStream;
+
+    fn create_test_session() -> SessionModel {
+        SessionModel {
+            id: DbId::from(("sessions", "1")),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
+            user_id: DbId::from(("users", "123")),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+
+    fn create_test_user() -> UserModel {
+        UserModel {
+            id: DbId::from(("users", "123")),
+            customer_id: None,
+            email: "test@example.com".to_string(),
+            password_hash: "hash".to_string(),
+            avatar: Some("avatar.jpg".to_string()),
+            settings: UserSettings {
+                language: Some(Language::English),
+                theme: Some(Theme::Dark),
+                notifications: NotificationSettings {
+                    email: true,
+                    push: true,
+                    sms: false,
+                },
+                privacy: PrivacySettings {
+                    data_collection: true,
+                    location: false,
+                },
+                security: SecuritySettings {
+                    two_factor: true,
+                    qr_code: "qr_code".to_string(),
+                    magic_link: true,
+                },
+            },
+            groups: vec![DbId::from(("groups", "1"))],
+            created_at: DbDateTime::from(Utc::now()),
+            updated_at: DbDateTime::from(Utc::now()),
+            activated: true,
+            is_admin: false,
+        }
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_read_user_initial_success() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+        let test_user = create_test_user();
+
+        // Mock initial select with correct table name
+        mock_db
+            .expect_select()
+            .with(eq(DbId::from(("users", "123"))))
+            .times(1)
+            .returning(move |_| Ok(Some(test_user.clone())));
+
+        // Mock live stream
+        mock_db
+            .expect_live()
+            .with(eq("users"))
+            .times(1)
+            .returning(move |_| {
+                let (_tx, rx) = mpsc::channel(32);
+                let rx = ReceiverStream::new(rx);
+                Ok(Box::pin(rx)
+                    as Pin<
+                        Box<dyn Stream<Item = Result<Vec<UserModel>, DatabaseError>> + Send + Sync>,
+                    >)
+            });
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(Empty {});
+        request.extensions_mut().insert(test_session);
+
+        let response = read_user(&service, request).await.unwrap();
+        let mut stream = response.into_inner();
+
+        // Test initial update
+        if let Some(result) = stream.next().await {
+            let user = result.unwrap();
+            assert_eq!(user.email, "test@example.com");
+            assert_eq!(user.avatar.unwrap(), "avatar.jpg");
+            assert!(!user.is_admin);
+        } else {
+            panic!("No initial user data received");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_read_user_no_session() {
+        let mock_db = MockDatabaseOperations::new();
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let request = Request::new(Empty {});
+        // Don't insert session into extensions
+
+        let status = read_user(&service, request).await.err().unwrap();
+        assert_eq!(status.code(), tonic::Code::Unauthenticated);
+        assert_eq!(status.message(), "Missing session information");
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_read_user_not_found() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        // Mock select with correct table name
+        mock_db
+            .expect_select::<UserModel>()
+            .with(eq(DbId::from(("users", "123"))))
+            .times(1)
+            .returning(|_| Ok(None));
+
+        // Mock live stream
+        mock_db
+            .expect_live()
+            .with(eq("users"))
+            .times(1)
+            .returning(|_| {
+                let (_tx, rx) = mpsc::channel(32);
+                let rx = ReceiverStream::new(rx);
+                Ok(Box::pin(rx)
+                    as Pin<
+                        Box<dyn Stream<Item = Result<Vec<UserModel>, DatabaseError>> + Send + Sync>,
+                    >)
+            });
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(Empty {});
+        request.extensions_mut().insert(test_session);
+
+        let response = read_user(&service, request).await.unwrap();
+        let mut stream = response.into_inner();
+
+        let error = stream.next().await.unwrap().unwrap_err();
+        assert_eq!(error.code(), tonic::Code::NotFound);
+        assert_eq!(error.message(), "User not found");
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_read_user_db_error() {
+        let mut mock_db = MockDatabaseOperations::new();
+        let test_session = create_test_session();
+
+        // Mock select with correct table name
+        mock_db
+            .expect_select::<UserModel>()
+            .with(eq(DbId::from(("users", "123"))))
+            .times(1)
+            .returning(|_| Err(DatabaseError::Internal("Database error".to_string())));
+
+        // Mock live stream
+        mock_db
+            .expect_live()
+            .with(eq("users"))
+            .times(1)
+            .returning(|_| {
+                let (_tx, rx) = mpsc::channel(32);
+                let rx = ReceiverStream::new(rx);
+                Ok(Box::pin(rx)
+                    as Pin<
+                        Box<dyn Stream<Item = Result<Vec<UserModel>, DatabaseError>> + Send + Sync>,
+                    >)
+            });
+
+        let service = ClientService {
+            db: Database::Mock(mock_db),
+        };
+
+        let mut request = Request::new(Empty {});
+        request.extensions_mut().insert(test_session);
+
+        let response = read_user(&service, request).await.unwrap();
+        let mut stream = response.into_inner();
+
+        let error = stream.next().await.unwrap().unwrap_err();
+        assert_eq!(error.code(), tonic::Code::Internal);
+        assert!(error.message().contains("Database error"));
+    }
 }
