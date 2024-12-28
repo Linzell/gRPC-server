@@ -48,6 +48,11 @@ pub use services::ClientService;
 /// The auth module provides HTTP1 routes for the authentication service.
 pub use http::auth_routes;
 
+/// # User HTTP1 Routes
+///
+/// The user module provides HTTP1 routes for the user service.
+pub use http::user_routes;
+
 /// # Auth Server Builder
 ///
 /// The auth module provides a builder for the authentication server.

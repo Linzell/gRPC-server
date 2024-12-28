@@ -15,14 +15,14 @@
 // limitations under the License.
 
 mod auth;
-// mod user;
+mod user;
 
 /// # Auth HTTP1 Routes
 ///
 /// The auth module provides HTTP1 routes for the authentication service.
 pub use auth::auth_routes;
 
-// /// # User HTTP1 Routes
-// ///
-// /// The user module provides HTTP1 routes for the user service.
-// pub use user::user_routes;
+/// # User HTTP1 Routes
+///
+/// The user module provides HTTP1 routes for the user service.
+pub use user::user_routes;

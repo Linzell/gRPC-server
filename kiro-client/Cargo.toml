@@ -11,7 +11,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["tracing"]
+default = ["tracing", "mailer", "storage"]
 
 mailer = ["kiro_mailer/client", "kiro_mailer/mock"]
 storage = ["kiro_storage/aws", "kiro_storage/mock"]
@@ -35,7 +35,7 @@ rand = { workspace = true }
 rand_core = { version = "0.6.4", features = ["std"] }
 
 # Dependencies for the server
-axum = { workspace = true, features = ["json"] }
+axum = { workspace = true, features = ["json", "multipart"] }
 http = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
