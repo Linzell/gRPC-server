@@ -42,7 +42,9 @@ use crate::ClientService;
 pub fn user_routes(db: Database) -> Router {
     let service = ClientService::new(db);
 
-    let mut router = Router::new()
+    let mut router = Router::new();
+
+    router = router
         .route("/delete_user", delete(delete_user::delete_user))
         .route("/disable_user", post(disable_user::disable_user))
         .route("/read_user", get(read_user::read_user))
