@@ -24,6 +24,11 @@ use std::io;
 use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
+#[cfg(feature = "governors")]
+use std::sync::Arc;
+#[cfg(feature = "governors")]
+use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
+
 #[cfg(feature = "client")]
 use kiro_client::{
     auth_routes, user_routes, AuthService, AuthServiceServer, ClientService, ClientServiceServer,
@@ -78,23 +83,45 @@ pub async fn create_app(
     db: Database, config: crate::config::Config,
 ) -> Result<axum::Router, crate::error::ServerError> {
     let cors = setup_cors(config.clone())?;
-    let routes_builder = setup_routes(db.clone()).await?.routes().into_axum_router();
+    let mut routes_builder = setup_routes(db.clone()).await?.routes().into_axum_router();
+
+    // Add governors
+    #[cfg(feature = "governors")]
+    {
+        let governor_conf = Arc::new(
+            GovernorConfigBuilder::default()
+                .per_second(1)
+                .burst_size(100)
+                .finish()
+                .unwrap(),
+        );
+
+        routes_builder = routes_builder.layer(GovernorLayer {
+            config: governor_conf,
+        });
+    }
 
     #[cfg(feature = "client")]
-    let routes_builder = routes_builder.layer(auth_layer(db.clone()));
+    {
+        routes_builder = routes_builder.layer(auth_layer(db.clone()));
+    }
 
     #[cfg(feature = "tracing")]
-    let routes_builder = routes_builder.layer(trace_layer(&config));
+    {
+        routes_builder = routes_builder.layer(trace_layer(&config));
+    }
 
-    let routes_builder = routes_builder
+    routes_builder = routes_builder
         .layer(cors)
         .route("/health", get(health::health_check))
         .route("/", get(|| async { "Hello, World!" }));
 
     #[cfg(feature = "client")]
-    let routes_builder = routes_builder
-        .nest("/auth", auth_routes(db.clone()))
-        .nest("/user", user_routes(db));
+    {
+        routes_builder = routes_builder
+            .nest("/auth", auth_routes(db.clone()))
+            .nest("/user", user_routes(db));
+    }
 
     Ok(routes_builder)
 }

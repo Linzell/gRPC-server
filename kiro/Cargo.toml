@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["tracing", "surrealdb", "client"]
+default = ["tracing", "governors", "surrealdb", "client"]
 
 client = ["kiro_client"]
 mailer = ["dep:uuid", "kiro_mailer", "kiro_client/mailer"]
@@ -24,6 +24,7 @@ tracing = [
     "tracing-opentelemetry",
     "dep:tracing-subscriber",
 ]
+governors = ["dep:tower_governor"]
 
 postgres = ["kiro_database/postgres"]
 surrealdb = ["kiro_database/surrealdb"]
@@ -65,6 +66,7 @@ tonic-reflection = { version = "0.12.3", default-features = false, features = [
 tonic-health = { version = "0.12.3", default-features = false, features = [
     "transport",
 ] }
+tower_governor = { version = "0.4.3", optional = true }
 tower-http = { version = "0.6", default-features = false, features = [
     "auth",
     "cors",
