@@ -14,6 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Fix generated file error, with clippy: "the following explicit lifetimes could be elided".
+//! Reason: I build generated files with `prost-build` and I don't want to modify them manually
+//! to remove the lifetimes.
+//! This is a workaround to fix the clippy error.
+#![allow(clippy::needless_lifetimes)]
+
 pub use prost;
 
 #[cfg(feature = "api")]

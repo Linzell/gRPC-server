@@ -35,7 +35,7 @@ rand = { workspace = true }
 rand_core = { version = "0.6.4", features = ["std"] }
 
 # Dependencies for the server
-axum = { workspace = true, features = ["json", "multipart"] }
+axum = { workspace = true, features = ["json", "multipart", "tokio"] }
 http = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true, features = ["full"] }

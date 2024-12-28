@@ -131,7 +131,7 @@ impl SessionModel {
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         // Encrypt user ID
-        let user_id_string = DbId::to_string(&user_id);
+        let user_id_string = DbId::to_string(user_id);
         let user_id_bytes = user_id_string.as_bytes();
         let ciphertext = cipher
             .encrypt(nonce, user_id_bytes.as_ref())

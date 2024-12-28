@@ -25,15 +25,12 @@ use tonic_health::server::HealthReporter;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[cfg(feature = "client")]
-use kiro_client::{auth_routes, AuthService, AuthServiceServer};
-
-// #[cfg(feature = "client")]
-// use kiro_client::{ClientService, ClientServiceServer};
+use kiro_client::{
+    auth_routes, user_routes, AuthService, AuthServiceServer, ClientService, ClientServiceServer,
+};
 
 #[cfg(feature = "client")]
 use crate::middleware::auth::auth_layer;
-// #[cfg(feature = "client")]
-// use crate::middleware::client::ClientService;
 #[cfg(feature = "tracing")]
 use crate::middleware::logging::trace_layer;
 
@@ -55,33 +52,16 @@ pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {
     //     .set_serving::<AdminServiceServer<AdminService>>()
     //     .await;
     #[cfg(feature = "client")]
-    health_reporter
-        .set_serving::<AuthServiceServer<AuthService>>()
-        .await;
-    // #[cfg(feature = "client")]
-    // health_reporter
-    //     .set_serving::<ClientServiceServer<ClientService>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<OrganizationServiceServer<OrganizationService>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<UserServiceServer<UserService>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<ProjectServiceServer<ProjectService<Database>>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<StoreServiceServer<StoreService<Database>>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<SetupServiceServer<SetupService<Database>>>()
-    //     .await;
+    {
+        health_reporter
+            .set_serving::<AuthServiceServer<AuthService>>()
+            .await;
+        health_reporter
+            .set_serving::<ClientServiceServer<ClientService>>()
+            .await;
+    }
     // health_reporter
     //     .set_serving::<TicketingServiceServer<TicketingService<Database>>>()
-    //     .await;
-    // health_reporter
-    //     .set_serving::<ModuleServiceServer<ModuleService<Database>>>()
     //     .await;
     // health_reporter
     //     .set_serving::<StripeServiceServer<StripeService<StripeClient>>>()
@@ -112,7 +92,9 @@ pub async fn create_app(
         .route("/", get(|| async { "Hello, World!" }));
 
     #[cfg(feature = "client")]
-    let routes_builder = routes_builder.nest("/auth", auth_routes(db));
+    let routes_builder = routes_builder
+        .nest("/auth", auth_routes(db.clone()))
+        .nest("/user", user_routes(db));
 
     Ok(routes_builder)
 }
@@ -144,8 +126,8 @@ fn setup_cors(config: crate::config::Config) -> Result<CorsLayer, crate::error::
                 .to_str()
                 .map(|origin_string| {
                     origin_string == frontend_url
-                        || origin_string == "https://localhost:3000"
-                        || origin_string == "http://localhost:3000"
+                        || origin_string == "https://localhost:5173"
+                        || origin_string == "http://localhost:5173"
                         || origin_string == "https://localhost"
                         || origin_string == "http://localhost"
                 })
@@ -179,9 +161,9 @@ async fn setup_routes(
         .add_service(tonic_web::enable(health_service));
 
     #[cfg(feature = "client")]
-    routes_builder.add_service(tonic_web::enable(AuthService::build(db.clone())));
-    // #[cfg(feature = "client")]
-    // routes_builder.add_service(tonic_web::enable(ClientService::build(db.clone())));
+    routes_builder
+        .add_service(tonic_web::enable(AuthService::build(db.clone())))
+        .add_service(tonic_web::enable(ClientService::build(db.clone())));
 
     Ok(routes_builder)
 }

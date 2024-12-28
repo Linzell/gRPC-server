@@ -59,7 +59,7 @@ pub async fn update_language(
     Json(request): Json<UpdateLanguageRequest>,
 ) -> impl IntoResponse {
     // Check if the language is a valid Language enum value
-    if !matches!(request.language.clone(), 0..=9) {
+    if !matches!(request.language, 0..=9) {
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "Invalid language value" })),
@@ -69,11 +69,7 @@ pub async fn update_language(
 
     match service
         .db
-        .update_field(
-            session.user_id.clone(),
-            "language",
-            request.language.clone(),
-        )
+        .update_field(session.user_id.clone(), "language", request.language)
         .await
     {
         Ok(_) => (StatusCode::OK, Json(serde_json::json!({}))).into_response(),
