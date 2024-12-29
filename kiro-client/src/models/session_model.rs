@@ -354,7 +354,7 @@ impl SessionModel {
         db.update_field(
             session_id,
             "expires_at",
-            DbDateTime::from_timestamp(Utc::now().timestamp() + 2 * 24 * 60 * 60, 0).unwrap(),
+            DbDateTime::from_timestamp(Utc::now().timestamp() + 7 * 24 * 60 * 60, 0).unwrap(),
         )
         .await
         .map_err(ClientError::Database)

@@ -1,0 +1,33 @@
+DEFINE TABLE users SCHEMAFULL;
+
+# User table
+DEFINE FIELD customer_id ON users TYPE string;
+DEFINE INDEX customer_id ON TABLE users COLUMNS customer_id UNIQUE;
+DEFINE FIELD email ON users TYPE string ASSERT string::is::email($value);
+DEFINE INDEX email ON TABLE users COLUMNS email UNIQUE;
+DEFINE FIELD password_hash ON users TYPE string;
+DEFINE FIELD avatar ON users TYPE option<string>;
+DEFINE FIELD settings ON users TYPE array;
+DEFINE FIELD settings.* ON users TYPE object;
+DEFINE FIELD settings.*.language ON users TYPE option<string>;
+DEFINE FIELD settings.*.theme ON users TYPE option<string>;
+DEFINE FIELD settings.*.notifications ON users TYPE array;
+DEFINE FIELD settings.*.notifications.* ON users TYPE object;
+DEFINE FIELD settings.*.notifications.*.email ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.notifications.*.push ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.notifications.*.sms ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.privacy ON users TYPE array;
+DEFINE FIELD settings.*.privacy.* ON users TYPE object;
+DEFINE FIELD settings.*.privacy.*.data_collection ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.privacy.*.location ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.security ON users TYPE array;
+DEFINE FIELD settings.*.security.* ON users TYPE object;
+DEFINE FIELD settings.*.security.*.two_factor ON users TYPE bool DEFAULT false;
+DEFINE FIELD settings.*.security.*.qr_code ON users TYPE string;
+DEFINE FIELD settings.*.security.*.magic_link ON users TYPE bool DEFAULT false;
+DEFINE FIELD groups ON users TYPE array;
+DEFINE FIELD groups.* ON users TYPE record<groups>;
+DEFINE FIELD created_at ON users TYPE timestamp DEFAULT now();
+DEFINE FIELD updated_at ON users TYPE timestamp DEFAULT now();
+DEFINE FIELD activated ON users TYPE bool DEFAULT false;
+DEFINE FIELD is_admin ON users TYPE bool DEFAULT false;
