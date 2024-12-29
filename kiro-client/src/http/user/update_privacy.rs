@@ -39,22 +39,57 @@ use crate::SessionModel;
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - Invalid privacy settings
-/// * `401 UNAUTHORIZED` - No session or invalid session
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
-/// use kiro_api::user::UpdatePrivacyRequest;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_api::client::v1::UpdatePrivacyRequest;
+/// use kiro_client::{ClientService, update_privacy::update_privacy, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
+///
+/// // Mock request
 /// let request = UpdatePrivacyRequest {
 ///    field: "data_collection".to_string(),
 ///    value: true,
 /// };
-/// let response = update_privacy(State(service), Extension(session), Json(request)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     update_privacy(State(service), Extension(session), Json(request)).await;
+///
+///     println!("Privacy updated");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/update_email",
+    tag = "user",
+    params(
+        UpdatePrivacyRequest
+    ),
+    responses(
+        (status = 200, description = "Privacy updated", body = String),
+        (status = 400, description = "Invalid privacy settings", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn update_privacy(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     Json(request): Json<UpdatePrivacyRequest>,
@@ -90,24 +125,12 @@ pub async fn update_privacy(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_update_privacy_data_collection_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -137,7 +160,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_location_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -167,7 +190,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_invalid_field() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
 
         let service = ClientService {
@@ -192,7 +215,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_db_error() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -228,7 +251,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_admin_session() {
-        let mut session = create_test_session();
+        let mut session = SessionModel::default();
         session.is_admin = true;
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
@@ -259,7 +282,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_empty_field() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
 
         let service = ClientService {
@@ -284,7 +307,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_privacy_toggle_both_fields() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -311,7 +334,7 @@ mod tests {
         let response = response.into_response();
         assert_eq!(response.status(), StatusCode::OK);
 
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 

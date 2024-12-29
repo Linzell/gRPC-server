@@ -46,22 +46,59 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - Invalid email address
-/// * `401 UNAUTHORIZED` - No session or invalid session
+/// * `404 NOT FOUND` - Link not found
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
-/// use kiro_api::user::UpdateEmailRequest;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_api::client::v1::UpdateEmailRequest;
+/// use kiro_client::{ClientService, update_email::update_email, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
+///
+/// // Mock request
 /// let request = UpdateEmailRequest {
 ///     email: "test@test.com".to_string(),
-///     temp_key
+///     temp_token: "temp_token".to_string(),
 /// };
-/// let response = update_email(State(service), Extension(session), Json(request)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     update_email(State(service), Extension(session), Json(request)).await;
+///
+///     println!("Email updated");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/update_email",
+    tag = "user",
+    params(
+        UpdateEmailRequest
+    ),
+    responses(
+        (status = 200, description = "Email updated", body = String),
+        (status = 400, description = "Invalid email address", body = String),
+        (status = 404, description = "Link not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn update_email(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     Json(request): Json<UpdateEmailRequest>,

@@ -39,13 +39,42 @@ use crate::SessionModel;
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{ClientService, delete_user::delete_user, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = delete_user(State(service), Extension(session)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     delete_user(State(service), Extension(session)).await;
+///
+///     println!("User deleted");
+/// });
 /// ```
+#[utoipa::path(
+    delete,
+    path = "/user/delete_user",
+    tag = "user",
+    responses(
+        (status = 200, description = "User deleted", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 pub async fn delete_user(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
 ) -> impl IntoResponse {
@@ -63,24 +92,12 @@ pub async fn delete_user(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_delete_user_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -102,7 +119,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_user_db_error() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -124,7 +141,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_user_admin_session() {
-        let mut session = create_test_session();
+        let mut session = SessionModel::default();
         session.is_admin = true;
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());

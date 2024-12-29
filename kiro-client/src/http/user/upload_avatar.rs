@@ -44,17 +44,53 @@ use crate::SessionModel;
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - No avatar file provided
-/// * `401 UNAUTHORIZED` - No session or invalid session
 /// * `500 INTERNAL SERVER ERROR` - S3 storage or database error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Extension, Multipart};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{ClientService, upload_avatar::upload_avatar, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = upload_avatar(&service, &session, multipart).await?;
+///
+/// // Mock multipart form data
+/// let multipart = Multipart::new(headers, "boundary".to_string(), Vec::new());
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+/// let response = upload_avatar((State(service), Extension(session), multipart).await;
+///
+///     println!("Avatar uploaded");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/upload_avatar",
+    tag = "user",
+    params(
+        UpdateAvatarRequest
+    ),
+    responses(
+        (status = 200, description = "Avatar uploaded", body = String),
+        (status = 400, description = "No avatar file provided", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn upload_avatar(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     mut multipart: Multipart,

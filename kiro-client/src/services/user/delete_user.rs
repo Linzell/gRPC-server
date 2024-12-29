@@ -40,9 +40,28 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::{client::v1::client_service_server::ClientService, google::protobuf::Empty};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Delete user request
 /// let request = Request::new(Empty {});
-/// delete_user(&service, request).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::delete_user(&service, request).await;
+///
+///     println!("User account deleted");
+/// });
 /// ```
 pub async fn delete_user(
     service: &ClientService, request: Request<Empty>,
@@ -66,26 +85,14 @@ pub async fn delete_user(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SessionModel;
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
-    use mockall::predicate::eq;
 
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
+    use mockall::predicate::eq;
 
     #[tokio::test]
     async fn test_delete_user_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         // Expect delete operation to be called with the user's ID
@@ -124,7 +131,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_user_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         // Simulate database error
@@ -149,7 +156,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_user_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut admin_session = create_test_session();
+        let mut admin_session = SessionModel::default();
         admin_session.is_admin = true;
         let user_id = admin_session.user_id.clone();
 

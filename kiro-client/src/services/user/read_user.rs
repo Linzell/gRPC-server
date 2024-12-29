@@ -45,13 +45,28 @@ pub type ReadUserStream = Pin<Box<dyn Stream<Item = Result<User, Status>> + Send
 ///
 /// ## Examples
 ///
-/// ```rust, ignore
-/// let request = Request::new(ReadUserRequest {});
-/// let response = read_user(&service, request).await?;
-/// let mut stream = response.into_inner();
-/// while let Some(user_data) = stream.next().await {
-///     println!("Received user update: {:?}", user_data);
-/// }
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::{client::v1::client_service_server::ClientService, google::protobuf::Empty};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Read user request
+/// let request = Request::new(Empty {});
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::read_user(&service, request).await;
+///
+///     println!("User data streamed");
+/// });
 /// ```
 pub async fn read_user(
     service: &ClientService, request: Request<Empty>,
@@ -155,71 +170,24 @@ async fn send_user_update(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
-    };
-    use chrono::Utc;
+
     use futures::StreamExt;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbId};
     use mockall::predicate::eq;
     use std::pin::Pin;
     use tokio_stream::wrappers::ReceiverStream;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "123")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
-
-    fn create_test_user() -> UserModel {
-        UserModel {
-            id: DbId::from(("users", "123")),
-            customer_id: None,
-            email: "test@example.com".to_string(),
-            password_hash: "hash".to_string(),
-            avatar: Some("avatar.jpg".to_string()),
-            settings: UserSettings {
-                language: Some(Language::English),
-                theme: Some(Theme::Dark),
-                notifications: NotificationSettings {
-                    email: true,
-                    push: true,
-                    sms: false,
-                },
-                privacy: PrivacySettings {
-                    data_collection: true,
-                    location: false,
-                },
-                security: SecuritySettings {
-                    two_factor: true,
-                    qr_code: "qr_code".to_string(),
-                    magic_link: true,
-                },
-            },
-            groups: vec![DbId::from(("groups", "1"))],
-            created_at: DbDateTime::from(Utc::now()),
-            updated_at: DbDateTime::from(Utc::now()),
-            activated: true,
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     #[ignore]
     async fn test_read_user_initial_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
-        let test_user = create_test_user();
+        let test_session = SessionModel::default();
+        let test_user = UserModel::default();
 
         // Mock initial select with correct table name
         mock_db
             .expect_select()
-            .with(eq(DbId::from(("users", "123"))))
+            .with(eq(DbId::default()))
             .times(1)
             .returning(move |_| Ok(Some(test_user.clone())));
 
@@ -277,12 +245,12 @@ mod tests {
     #[ignore]
     async fn test_read_user_not_found() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         // Mock select with correct table name
         mock_db
             .expect_select::<UserModel>()
-            .with(eq(DbId::from(("users", "123"))))
+            .with(eq(DbId::default()))
             .times(1)
             .returning(|_| Ok(None));
 
@@ -319,12 +287,12 @@ mod tests {
     #[ignore]
     async fn test_read_user_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         // Mock select with correct table name
         mock_db
             .expect_select::<UserModel>()
-            .with(eq(DbId::from(("users", "123"))))
+            .with(eq(DbId::default()))
             .times(1)
             .returning(|_| Err(DatabaseError::Internal("Database error".to_string())));
 

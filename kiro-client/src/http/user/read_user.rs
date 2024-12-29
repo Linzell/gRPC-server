@@ -50,13 +50,42 @@ use crate::models::{SessionModel, UserModel};
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Extension};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{ClientService, read_user::read_user, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = read_user(&service, &session).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     read_user(State(service), Extension(session)).await;
+///
+///     println!("User data streamed");
+/// });
 /// ```
+#[utoipa::path(
+    delete,
+    path = "/user/read_user",
+    tag = "user",
+    responses(
+        (status = 200, description = "User data streamed", body = User),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 pub async fn read_user(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
 ) -> impl IntoResponse {

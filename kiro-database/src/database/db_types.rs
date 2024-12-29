@@ -28,6 +28,16 @@ pub struct DbId {
     pub id: DbIdentifier,
 }
 
+// WARNING: This is a default implementation for testing purposes only
+impl Default for DbId {
+    fn default() -> Self {
+        Self {
+            tb: "default".to_string(),
+            id: DbIdentifier::default(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum DbIdentifier {
     String(String),
@@ -35,6 +45,13 @@ pub enum DbIdentifier {
     Array(Vec<DbIdentifier>),
     Object(serde_json::Map<String, serde_json::Value>),
     Generate(String),
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for DbIdentifier {
+    fn default() -> Self {
+        DbIdentifier::String("123".to_string())
+    }
 }
 
 impl PartialOrd for DbIdentifier {

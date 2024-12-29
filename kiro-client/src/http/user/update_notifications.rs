@@ -39,22 +39,57 @@ use crate::SessionModel;
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - Invalid notification settings
-/// * `401 UNAUTHORIZED` - No session or invalid session
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
-/// use kiro_api::user::UpdateNotificationsRequest;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_api::client::v1::UpdateNotificationsRequest;
+/// use kiro_client::{ClientService, update_notifications::update_notifications, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
+///
+/// // Mock request
 /// let request = UpdateNotificationsRequest {
 ///     field: "email".to_string(),
 ///     value: true,
 /// };
-/// let response = update_notifications(State(service), Extension(session), Json(request)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     update_notifications(State(service), Extension(session), Json(request)).await;
+///
+///     println!("Notifications updated");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/update_notifications",
+    tag = "user",
+    params(
+        UpdateNotificationsRequest
+    ),
+    responses(
+        (status = 200, description = "Notifications updated", body = String),
+        (status = 400, description = "Invalid notification settings", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn update_notifications(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     Json(request): Json<UpdateNotificationsRequest>,
@@ -90,24 +125,12 @@ pub async fn update_notifications(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_update_notifications_email_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -138,7 +161,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_notifications_push_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -169,7 +192,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_notifications_sms_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -200,7 +223,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_notifications_invalid_field() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -227,7 +250,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_notifications_db_error() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -265,7 +288,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut admin_session = create_test_session();
+        let mut admin_session = SessionModel::default();
         admin_session.is_admin = true;
         let user_id = admin_session.user_id.clone();
 
@@ -294,7 +317,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_empty_field() {
         let mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         let service = ClientService {
             db: Database::Mock(mock_db),

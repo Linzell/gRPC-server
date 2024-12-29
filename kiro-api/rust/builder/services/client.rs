@@ -26,6 +26,37 @@ pub fn build_client_service(
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("client").join("proto_descriptor_v1.bin"))
         .compile_well_known_types(config.compile_well_known_types)
+        .type_attribute(".", "#[derive(utoipa::ToSchema)]")
+        .type_attribute(
+            ".client.v1.UpdateEmailRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
+        .type_attribute(
+            ".client.v1.UpdateLanguageRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
+        .type_attribute(
+            ".client.v1.UpdateNotificationsRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
+        .type_attribute(
+            ".client.v1.UpdatePasswordRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
+        .type_attribute(
+            ".client.v1.UpdatePrivacyRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
+        .type_attribute(
+            ".client.v1.UpdateThemeRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
         .extern_path(".google.protobuf", "crate::google::protobuf");
 
     builder.compile(

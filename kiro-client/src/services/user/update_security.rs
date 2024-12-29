@@ -40,12 +40,32 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust, ignore
-/// let request = Request::new(UpdateUserSecurityRequest {
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, update_security_request::Value, UpdateSecurityRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update user's security settings
+/// let request = Request::new(UpdateSecurityRequest {
 ///    field: "two_factor".to_string(),
-///    value: true,
+///    value: Some(Value::TwoFactor(true)),
 /// });
-/// let response = update_security(&service, request).await?;
+///
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_security(&service, request).await;
+///
+///     println!("Security settings updated");
+/// });
 /// ```
 pub async fn update_security(
     service: &ClientService, request: Request<UpdateSecurityRequest>,
@@ -91,27 +111,15 @@ pub async fn update_security(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SessionModel;
-    use chrono::Utc;
-    use kiro_api::client::v1::update_security_request::Value as JsonValue;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
-    use mockall::predicate::eq;
 
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
+    use kiro_api::client::v1::update_security_request::Value as JsonValue;
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
+    use mockall::predicate::eq;
 
     #[tokio::test]
     async fn test_update_security_two_factor_enable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -141,7 +149,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_two_factor_disable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -171,7 +179,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_magic_link_enable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -219,7 +227,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -250,7 +258,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut admin_session = create_test_session();
+        let mut admin_session = SessionModel::default();
         admin_session.is_admin = true;
         let user_id = admin_session.user_id.clone();
 
@@ -281,7 +289,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_toggle_multiple_fields() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         // First update: two_factor

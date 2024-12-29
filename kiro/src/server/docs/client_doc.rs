@@ -24,6 +24,16 @@ use utoipa::OpenApi;
         kiro_client::logout::logout,
         kiro_client::register::register,
         // # User
+        kiro_client::delete_user::delete_user,
+        kiro_client::disable_user::disable_user,
+        kiro_client::read_user::read_user,
+        kiro_client::update_email::update_email,
+        kiro_client::update_language::update_language,
+        kiro_client::update_notifications::update_notifications,
+        kiro_client::update_password::update_password,
+        kiro_client::update_privacy::update_privacy,
+        kiro_client::update_security::update_security,
+        kiro_client::update_theme::update_theme,
     ),
     components(
         schemas(
@@ -31,6 +41,13 @@ use utoipa::OpenApi;
             kiro_api::auth::v1::AuthRequest,
             kiro_api::auth::v1::Session,
             // # User
+            kiro_api::client::v1::User,
+            kiro_api::client::v1::UpdateEmailRequest,
+            kiro_api::client::v1::UpdateLanguageRequest,
+            kiro_api::client::v1::UpdateNotificationsRequest,
+            kiro_api::client::v1::UpdatePasswordRequest,
+            kiro_api::client::v1::UpdatePrivacyRequest,
+            kiro_api::client::v1::UpdateThemeRequest,
         )
     ),
     tags(
@@ -44,4 +61,4 @@ use utoipa::OpenApi;
     )
 )]
 
-pub struct ApiDoc;
+pub struct ClientDoc;

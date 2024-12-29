@@ -39,22 +39,55 @@ use crate::SessionModel;
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - Invalid security settings
-/// * `401 UNAUTHORIZED` - No session or invalid session
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
-/// use kiro_api::user::UpdateSecurityRequest;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_api::client::v1::{update_security_request::Value, UpdateSecurityRequest};
+/// use kiro_client::{ClientService, update_security::update_security, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
+///
+/// // Mock request
 /// let request = UpdateSecurityRequest {
 ///    field: "two_factor".to_string(),
-///    value: true,
+///    value: Some(Value::TwoFactor(true)),
 /// };
-/// let response = update_security(State(service), Extension(session), Json(request)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     update_security(State(service), Extension(session), Json(request)).await;
+///
+///     println!("Email updated");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/update_security",
+    tag = "user",
+    responses(
+        (status = 200, description = "Security settings updated", body = String),
+        (status = 400, description = "QR code field is immutable", body = String),
+        (status = 400, description = "Invalid security field", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn update_security(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     Json(request): Json<UpdateSecurityRequest>,
@@ -103,26 +136,14 @@ pub async fn update_security(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
     use kiro_api::client::v1::update_security_request::Value as JsonValue;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_update_security_two_factor_enable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
         let user_id = session.user_id.clone();
 
@@ -154,7 +175,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_two_factor_disable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
         let user_id = session.user_id.clone();
 
@@ -186,7 +207,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_magic_link_enable() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
         let user_id = session.user_id.clone();
 
@@ -217,7 +238,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_security_db_error() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -254,7 +275,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_security_admin_session() {
-        let mut session = create_test_session();
+        let mut session = SessionModel::default();
         session.is_admin = true;
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
@@ -288,7 +309,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_security_toggle_multiple_fields() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
         let user_id = session.user_id.clone();
 
@@ -317,7 +338,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
         let extension = Extension(session.clone());
         let user_id = session.user_id.clone();
 

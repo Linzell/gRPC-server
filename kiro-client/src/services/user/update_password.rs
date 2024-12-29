@@ -57,13 +57,33 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, UpdatePasswordRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update password request
 /// let request = Request::new(UpdatePasswordRequest {
-///     temp_token,
-///     old_password,
-///     password,
+///     temp_token: "temp_token".to_string(),
+///     old_password: "old_password".to_string(),
+///     password: "new_password".to_string(),
 /// });
-/// update_password(&service, request).await?;
+///
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_password(&service, request).await;
+///
+///     println!("Password updated");
+/// });
 /// ```
 pub async fn update_password(
     service: &ClientService, request: Request<UpdatePasswordRequest>,

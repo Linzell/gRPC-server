@@ -43,13 +43,31 @@ use crate::{
 /// * `Status::Internal` - Database error
 ///
 /// # Example
-/// ```rust,ignore
-/// let request = Request::new(LoginRequest {
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::auth::v1::{auth_service_server::AuthService, AuthRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::AuthService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Register request
+/// let request = Request::new(AuthRequest {
 ///     email: "user@example.com".to_string(),
 ///     password: "password123!".to_string()
 /// });
-/// let response = register(service, request).await?;
-/// let session = response.into_inner();
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     AuthService::register(&service, request).await;
+///
+///     println!("Login successful");
+/// });
 /// ```
 pub async fn register(
     service: &AuthService, request: Request<AuthRequest>,
@@ -114,72 +132,14 @@ pub async fn register(
 mod tests {
     use super::*;
 
-    use crate::{
-        CreateSessionModel, Language, NotificationSettings, PrivacySettings, SecuritySettings,
-        SessionModel, Theme, UserSettings,
-    };
-    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use crate::{CreateSessionModel, SessionModel};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::{always, eq};
-    use rand_core::OsRng;
-
-    fn create_test_user() -> UserModel {
-        // Create a proper password hash for testing
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-        let password_hash = argon2
-            .hash_password("Password123!".as_bytes(), &salt)
-            .unwrap()
-            .to_string();
-
-        UserModel {
-            id: DbId::from(("users", "123")),
-            customer_id: Some("cust_123".to_string()),
-            email: "test@example.com".to_string(),
-            password_hash,
-            avatar: Some("avatar.jpg".to_string()),
-            settings: UserSettings {
-                language: Some(Language::English),
-                theme: Some(Theme::Dark),
-                notifications: NotificationSettings {
-                    email: true,
-                    push: true,
-                    sms: false,
-                },
-                privacy: PrivacySettings {
-                    data_collection: true,
-                    location: false,
-                },
-                security: SecuritySettings {
-                    two_factor: true,
-                    qr_code: "qr_code".to_string(),
-                    magic_link: true,
-                },
-            },
-            groups: vec![DbId::from(("groups", "123"))],
-            created_at: DbDateTime::from(Utc::now()),
-            updated_at: DbDateTime::from(Utc::now()),
-            activated: true,
-            is_admin: false,
-        }
-    }
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_register_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
+        let user = UserModel::default();
 
         mock_db
             .expect_read_by_field::<UserModel>()
@@ -193,7 +153,7 @@ mod tests {
             .times(1)
             .returning(move |_, _| Ok(vec![user.clone()]));
 
-        let session = create_test_session();
+        let session = SessionModel::default();
         mock_db
             .expect_create::<CreateSessionModel, SessionModel>()
             .with(eq("sessions"), always())
@@ -240,7 +200,7 @@ mod tests {
     #[tokio::test]
     async fn test_register_email_in_use() {
         let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
+        let user = UserModel::default();
 
         mock_db
             .expect_read_by_field::<UserModel>()
@@ -295,7 +255,7 @@ mod tests {
     #[tokio::test]
     async fn test_register_session_creation_failure() {
         let mut mock_db = MockDatabaseOperations::new();
-        let user = create_test_user();
+        let user = UserModel::default();
 
         mock_db
             .expect_read_by_field::<UserModel>()

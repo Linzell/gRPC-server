@@ -18,6 +18,8 @@ use axum_server::{tls_rustls::RustlsConfig, Handle};
 use kiro_database::db_bridge::Database;
 use std::net::SocketAddr;
 
+#[cfg(feature = "documentation")]
+mod docs;
 mod health;
 mod redirect;
 mod reflection;

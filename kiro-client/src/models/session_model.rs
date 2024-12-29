@@ -74,6 +74,20 @@ pub struct SessionModel {
     pub is_admin: bool,
 }
 
+// WARNING: This is a default implementation for testing purposes only
+impl Default for SessionModel {
+    fn default() -> Self {
+        Self {
+            id: DbId::default(),
+            session_key: "session_token".to_string(),
+            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(7)),
+            user_id: DbId::default(),
+            ip_address: Some("127.0.0.1".to_string()),
+            is_admin: false,
+        }
+    }
+}
+
 /// # Create Session Model
 ///
 /// The create session model is a model that represents a create session.
@@ -439,57 +453,10 @@ mod tests {
         Language, NotificationSettings, PrivacySettings, SecuritySettings, Theme, UserSettings,
     };
 
-    /// Helper function to create a sample SessionModel for testing
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "123")),
-            session_key: "test_session_key".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::hours(48)),
-            user_id: DbId::from(("users", "456")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
-
-    /// Helper function to create a sample UserModel for testing
-    #[cfg(feature = "mailer")]
-    fn create_test_user() -> UserModel {
-        UserModel {
-            id: DbId::from(("users", "123")),
-            customer_id: Some("cust_123".to_string()),
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            avatar: Some("avatar.jpg".to_string()),
-            settings: UserSettings {
-                language: Some(Language::English),
-                theme: Some(Theme::Dark),
-                notifications: NotificationSettings {
-                    email: true,
-                    push: true,
-                    sms: false,
-                },
-                privacy: PrivacySettings {
-                    data_collection: true,
-                    location: false,
-                },
-                security: SecuritySettings {
-                    two_factor: true,
-                    qr_code: "qr_code".to_string(),
-                    magic_link: true,
-                },
-            },
-            groups: vec![DbId::from(("groups", "123"))],
-            created_at: DbDateTime::from(Utc::now()),
-            updated_at: DbDateTime::from(Utc::now()),
-            activated: true,
-            is_admin: false,
-        }
-    }
-
     #[tokio::test]
     async fn test_create_session_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         mock_db
             .expect_create::<CreateSessionModel, SessionModel>()
@@ -497,7 +464,7 @@ mod tests {
             .times(1)
             .returning(move |_, _| Ok(vec![test_session.clone()]));
 
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         let result = SessionModel::create_session(
             &mock_db,
@@ -516,7 +483,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let test_id = test_session.id.clone();
         let test_user_id = test_session.user_id.clone();
 
@@ -548,7 +515,7 @@ mod tests {
             .times(1)
             .returning(|_, _, _| Ok(()));
 
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let test_user_id = test_session.user_id.clone();
 
         let result = SessionModel::get_session(&mock_db, encrypted_user_id).await;
@@ -563,7 +530,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_not_found() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_user_id = DbId::from(("users", "456"));
+        let test_user_id = DbId::default();
 
         // First, encrypt a user ID
         let (_, encrypted_user_id) = SessionModel::generate_refresh_token(test_user_id.clone())
@@ -588,7 +555,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_expired() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut test_session = create_test_session();
+        let mut test_session = SessionModel::default();
         test_session.expires_at = DbDateTime::from(Utc::now() - chrono::Duration::hours(1));
         let test_id = test_session.id.clone();
         let test_user_id = test_session.user_id.clone();
@@ -632,7 +599,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_encryption_decryption() {
-        let user_id = DbId::from(("users", "test_user"));
+        let user_id = DbId::default();
         let key = &*ENCRYPTION_KEY;
 
         // Test encryption
@@ -690,7 +657,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_by_user_id_existing_same_ip() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let test_id = test_session.id.clone();
         let test_user_id = test_session.user_id.clone();
 
@@ -709,7 +676,7 @@ mod tests {
             .times(1)
             .returning(|_, _, _| Ok(()));
 
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let test_user_id = test_session.user_id.clone();
 
         let result = SessionModel::get_session_by_user_id(
@@ -728,7 +695,7 @@ mod tests {
     #[cfg_attr(feature = "mailer", ignore)]
     async fn test_get_session_by_user_id_different_ip() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut test_session = create_test_session();
+        let mut test_session = SessionModel::default();
         test_session.ip_address = Some("192.168.1.1".to_string());
         let test_id = test_session.id.clone();
         let test_user_id = test_session.user_id.clone();
@@ -746,11 +713,11 @@ mod tests {
         // TODO: Need to fix this test to work with mailer
         #[cfg(feature = "mailer")]
         {
-            let test_session = create_test_session();
+            let test_session = SessionModel::default();
             let test_user_id = test_session.user_id.clone();
 
             // Set up expectation for user lookup
-            let test_user = create_test_user();
+            let test_user = UserModel::default();
             mock_db
                 .expect_select::<UserModel>()
                 .with(eq(test_user_id.clone()))
@@ -786,12 +753,12 @@ mod tests {
             .times(1)
             .returning(|_| Ok(Some(())));
 
-        let mut test_session = create_test_session();
+        let mut test_session = SessionModel::default();
         test_session.ip_address = Some("192.168.1.1".to_string());
         let test_user_id = test_session.user_id.clone();
 
         // Expect create_session call
-        let new_session = create_test_session();
+        let new_session = SessionModel::default();
         mock_db
             .expect_create::<CreateSessionModel, SessionModel>()
             .withf(move |table, create_model| {
@@ -803,7 +770,7 @@ mod tests {
             .times(1)
             .returning(move |_, _| Ok(vec![new_session.clone()]));
 
-        let mut test_session = create_test_session();
+        let mut test_session = SessionModel::default();
         test_session.ip_address = Some("192.168.1.1".to_string());
         let test_user_id = test_session.user_id.clone();
 
@@ -817,7 +784,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_by_user_id_expired() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut test_session = create_test_session();
+        let mut test_session = SessionModel::default();
         test_session.expires_at = DbDateTime::from(Utc::now() - chrono::Duration::hours(1));
         let test_id = test_session.id.clone();
         let test_user_id = test_session.user_id.clone();
@@ -845,7 +812,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_session_by_user_id_new() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_user_id = DbId::from(("users", "456"));
+        let test_user_id = DbId::default();
 
         // First query returns no existing session
         mock_db
@@ -854,7 +821,7 @@ mod tests {
             .returning(|_, _, _, _| Ok(vec![]));
 
         // Expect create_session call
-        let new_session = create_test_session();
+        let new_session = SessionModel::default();
         mock_db
             .expect_create::<CreateSessionModel, SessionModel>()
             .withf(move |table, create_model| {
@@ -866,7 +833,7 @@ mod tests {
             .times(1)
             .returning(move |_, _| Ok(vec![new_session.clone()]));
 
-        let test_user_id = DbId::from(("users", "456"));
+        let test_user_id = DbId::default();
 
         let result =
             SessionModel::get_session_by_user_id(&mock_db, test_user_id, "127.0.0.1".to_string())
@@ -878,7 +845,7 @@ mod tests {
     #[tokio::test]
     async fn test_renew_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let test_id = test_session.id.clone();
 
         mock_db

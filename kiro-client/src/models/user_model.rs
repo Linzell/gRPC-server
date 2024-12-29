@@ -14,11 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use chrono::Utc;
 use kiro_api::client::v1::{Notifications, Privacy, Security, Settings, User};
 use kiro_database::{
     db_bridge::{DatabaseOperations, HasId},
     DbDateTime, DbId,
 };
+use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ClientError;
@@ -65,6 +68,17 @@ pub struct NotificationSettings {
     pub sms: bool,
 }
 
+// WARNING: This is a default implementation for testing purposes only
+impl Default for NotificationSettings {
+    fn default() -> Self {
+        Self {
+            email: true,
+            push: true,
+            sms: false,
+        }
+    }
+}
+
 /// Represents user privacy settings
 ///
 /// Controls data collection and location tracking preferences
@@ -74,6 +88,16 @@ pub struct PrivacySettings {
     pub data_collection: bool,
     /// Enable/disable location tracking
     pub location: bool,
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for PrivacySettings {
+    fn default() -> Self {
+        Self {
+            data_collection: true,
+            location: false,
+        }
+    }
 }
 
 /// Represents user security settings
@@ -87,6 +111,17 @@ pub struct SecuritySettings {
     pub qr_code: String,
     /// Enable/disable magic link authentication
     pub magic_link: bool,
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for SecuritySettings {
+    fn default() -> Self {
+        Self {
+            two_factor: true,
+            qr_code: "qr_code".to_string(),
+            magic_link: true,
+        }
+    }
 }
 
 /// User Settings Model
@@ -119,6 +154,19 @@ pub struct UserSettings {
     pub notifications: NotificationSettings,
     pub privacy: PrivacySettings,
     pub security: SecuritySettings,
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for UserSettings {
+    fn default() -> Self {
+        Self {
+            language: Some(Language::English),
+            theme: Some(Theme::Dark),
+            notifications: NotificationSettings::default(),
+            privacy: PrivacySettings::default(),
+            security: SecuritySettings::default(),
+        }
+    }
 }
 
 /// User Model
@@ -177,6 +225,32 @@ pub struct UserModel {
     pub updated_at: DbDateTime,
     pub activated: bool,
     pub is_admin: bool,
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for UserModel {
+    fn default() -> Self {
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password("Password123!".as_bytes(), &salt)
+            .unwrap()
+            .to_string();
+
+        Self {
+            id: DbId::default(),
+            customer_id: Some("cust_123".to_string()),
+            email: "test@example.com".to_string(),
+            password_hash,
+            avatar: Some("avatar.jpg".to_string()),
+            settings: UserSettings::default(),
+            groups: vec![DbId::default()],
+            created_at: DbDateTime::from(Utc::now()),
+            updated_at: DbDateTime::from(Utc::now()),
+            activated: true,
+            is_admin: false,
+        }
+    }
 }
 
 /// Create User Model
@@ -317,47 +391,12 @@ impl UserModel {
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DbDateTime};
+    use kiro_database::db_bridge::MockDatabaseOperations;
     use mockall::predicate::*;
-
-    /// Helper function to create a sample UserModel for testing
-    fn create_test_user() -> UserModel {
-        UserModel {
-            id: DbId::from(("users", "123")),
-            customer_id: Some("cust_123".to_string()),
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            avatar: Some("avatar.jpg".to_string()),
-            settings: UserSettings {
-                language: Some(Language::English),
-                theme: Some(Theme::Dark),
-                notifications: NotificationSettings {
-                    email: true,
-                    push: true,
-                    sms: false,
-                },
-                privacy: PrivacySettings {
-                    data_collection: true,
-                    location: false,
-                },
-                security: SecuritySettings {
-                    two_factor: true,
-                    qr_code: "qr_code".to_string(),
-                    magic_link: true,
-                },
-            },
-            groups: vec![DbId::from(("groups", "123"))],
-            created_at: DbDateTime::from(Utc::now()),
-            updated_at: DbDateTime::from(Utc::now()),
-            activated: true,
-            is_admin: false,
-        }
-    }
 
     #[test]
     fn test_model_conversions() {
-        let user_model = create_test_user();
+        let user_model = UserModel::default();
 
         // Test SecuritySettings conversion
         let security: Security = (&user_model.settings.security).into();
@@ -395,7 +434,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_user_by_email_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_user = create_test_user();
+        let test_user = UserModel::default();
         let test_email = test_user.email.clone();
 
         mock_db
@@ -406,7 +445,7 @@ mod tests {
             .times(1)
             .returning(move |_, _, _, _| Ok(vec![test_user.clone()]));
 
-        let test_user = create_test_user();
+        let test_user = UserModel::default();
         let test_email = test_user.email.clone();
 
         let result = UserModel::get_user_by_email(&mock_db, test_email).await;
@@ -439,7 +478,7 @@ mod tests {
     #[tokio::test]
     async fn test_check_email_exists() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_user = create_test_user();
+        let test_user = UserModel::default();
         let test_email = test_user.email.clone();
 
         mock_db
@@ -450,7 +489,7 @@ mod tests {
             .times(1)
             .returning(move |_, _, _, _| Ok(vec![test_user.clone()]));
 
-        let test_user = create_test_user();
+        let test_user = UserModel::default();
         let test_email = test_user.email.clone();
 
         let result = UserModel::check_email(&mock_db, test_email).await;

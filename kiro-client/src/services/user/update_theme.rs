@@ -40,11 +40,30 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust, ignore
-/// let request = Request::new(UpdateUserThemeRequest {
-///    theme: "dark".to_string()
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, UpdateThemeRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update user's theme request
+/// let request = Request::new(UpdateThemeRequest {
+///    theme: 0,    // 0 for light theme, 1 for dark theme, 2 for system theme
 /// });
-/// let response = update_theme(&service, request).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_theme(&service, request).await;
+///
+///     println!("User theme updated successfully");
+/// });
 /// ```
 pub async fn update_theme(
     service: &ClientService, request: Request<UpdateThemeRequest>,
@@ -71,26 +90,14 @@ pub async fn update_theme(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SessionModel;
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
-    use mockall::predicate::eq;
 
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
+    use mockall::predicate::eq;
 
     #[tokio::test]
     async fn test_update_theme_light_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -113,7 +120,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_dark_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -151,7 +158,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -175,7 +182,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut admin_session = create_test_session();
+        let mut admin_session = SessionModel::default();
         admin_session.is_admin = true;
         let user_id = admin_session.user_id.clone();
 
@@ -199,7 +206,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_toggle() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         // First update: light theme
@@ -236,7 +243,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_system_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -259,7 +266,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_multiple_changes() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         // Multiple theme changes in sequence

@@ -38,9 +38,28 @@ use crate::SessionModel;
 /// * `NOT_FOUND` - Session not found in request
 ///
 /// # Example
-/// ```rust,ignore
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::{auth::v1::auth_service_server::AuthService, google::protobuf::Empty};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::AuthService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Logout request
 /// let request = Request::new(Empty {});
-/// logout(service, request).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     AuthService::logout(&service, request).await;
+///
+///     println!("Login successful");
+/// });
 /// ```
 pub async fn logout(
     service: &AuthService, request: Request<Empty>,
@@ -60,25 +79,13 @@ pub async fn logout(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DbDateTime, DbId};
+    use kiro_database::db_bridge::MockDatabaseOperations;
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_logout_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
 
         mock_db
             .expect_delete()

@@ -1,4 +1,4 @@
-// utils/mod.rs
+// src/server/docs/mod.rs
 //
 // Copyright Charlie Cohen <linzellart@gmail.com>
 //
@@ -14,20 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// # gRPC Utilities
-///
-/// The gRPC utilities module provides helper functions for working with gRPC services.
 #[cfg(feature = "client")]
-pub mod grpc_utils;
+mod client_doc;
 
-/// # Telemetry
+/// # Client Swagger Documentation
 ///
-/// The telemetry module provides distributed tracing functionality.
-#[cfg(feature = "tracing")]
-pub mod telemetry;
-
-/// # Error Mailer
-///
-/// The error_mailer module handles sending error notifications via email.
-#[cfg(feature = "mailer")]
-pub mod error_mailer;
+/// The client swagger documentation module provides the OpenAPI documentation for the client service.
+#[cfg(feature = "client")]
+pub use client_doc::ClientDoc;

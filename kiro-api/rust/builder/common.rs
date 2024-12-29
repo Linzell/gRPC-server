@@ -26,6 +26,7 @@ pub fn build_common_protos(
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("common").join("proto_descriptor_v1.bin"))
         .compile_well_known_types(config.compile_well_known_types)
+        .type_attribute(".", "#[derive(utoipa::ToSchema)]")
         .extern_path(".google.protobuf", "crate::google::protobuf");
 
     builder.compile(

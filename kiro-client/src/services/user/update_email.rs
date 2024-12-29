@@ -56,12 +56,31 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, UpdateEmailRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update email request
 /// let request = Request::new(UpdateEmailRequest {
-///     temp_token
-///     email
+///     email: "test@test.com".to_string(),
+///     temp_token: "temp_token".to_string(),
 /// });
-/// update_email(&service, request).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_email(&service, request).await;
+///
+///     println!("Email updated");
+/// });
 /// ```
 pub async fn update_email(
     service: &ClientService, request: Request<UpdateEmailRequest>,

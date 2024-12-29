@@ -41,16 +41,34 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust, ignore
-/// let request = Request::new(UpdateUserAvatarRequest {
-///     avatar: Some(File {
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, UploadAvatarRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update user's avatar request
+/// let request = Request::new(UploadAvatarRequest {
+///     file: Some(File {
 ///         name: "avatar.jpg".to_string(),
 ///         content: vec![...],
 ///         type: "image/jpeg".to_string()
 ///     })
 /// });
-/// let response = update_avatar(&service, request).await?;
-/// println!("New avatar URL: {}", response.get_ref().avatar);
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_avatar(&service, request).await;
+///
+///     println!("Avatar uploaded successfully");
+/// });
 /// ```
 pub async fn upload_avatar(
     service: &ClientService, request: Request<UploadAvatarRequest>,

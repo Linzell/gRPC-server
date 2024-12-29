@@ -34,8 +34,8 @@ use utoipa::OpenApi;
 #[cfg(feature = "documentation")]
 use utoipa_swagger_ui::SwaggerUi;
 
-#[cfg(feature = "documentation")]
-use crate::utils::doc::ApiDoc;
+#[cfg(any(feature = "client", feature = "documentation"))]
+use crate::server::docs::ClientDoc;
 
 #[cfg(feature = "client")]
 use kiro_client::{
@@ -92,7 +92,7 @@ pub async fn create_app(
 ) -> Result<axum::Router, crate::error::ServerError> {
     let cors = setup_cors(config.clone())?;
     let mut routes_builder = setup_routes(db.clone()).await?.routes().into_axum_router();
-    let openapi = ApiDoc::openapi();
+    let client_openapi = ClientDoc::openapi();
 
     // Add governors
     #[cfg(feature = "governors")]
@@ -120,10 +120,10 @@ pub async fn create_app(
         routes_builder = routes_builder.layer(trace_layer(&config));
     }
 
-    #[cfg(feature = "documentation")]
+    #[cfg(all(feature = "documentation", feature = "client"))]
     {
         routes_builder = routes_builder
-            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", openapi));
+            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/client.json", client_openapi));
     }
 
     routes_builder = routes_builder

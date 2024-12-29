@@ -40,12 +40,31 @@ use crate::SessionModel;
 ///
 /// # Example
 ///
-/// ```rust, ignore
-/// let request = Request::new(UpdateUserNotificationsRequest {
+/// ```rust,no_run
+/// use tonic::{Request, Response, Status};
+/// use kiro_api::client::v1::{client_service_server::ClientService, UpdateNotificationsRequest};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = kiro_client::ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Update notifications request
+/// let request = Request::new(UpdateNotificationsRequest {
 ///    field: "email".to_string(),
 ///    value: true,
 /// });
-/// let response = update_notifications(&service, request).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     ClientService::update_notifications(&service, request).await;
+///
+///     println!("Updated user's email notification settings");
+/// });
 /// ```
 pub async fn update_notifications(
     service: &ClientService, request: Request<UpdateNotificationsRequest>,
@@ -85,26 +104,14 @@ pub async fn update_notifications(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SessionModel;
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
-    use mockall::predicate::eq;
 
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
+    use mockall::predicate::eq;
 
     #[tokio::test]
     async fn test_update_notifications_email_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -130,7 +137,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_push_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -156,7 +163,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_sms_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -200,7 +207,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_invalid_field() {
         let mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         let service = ClientService {
             db: Database::Mock(mock_db),
@@ -220,7 +227,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let user_id = test_session.user_id.clone();
 
         mock_db
@@ -247,7 +254,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let mut admin_session = create_test_session();
+        let mut admin_session = SessionModel::default();
         admin_session.is_admin = true;
         let user_id = admin_session.user_id.clone();
 
@@ -274,7 +281,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_notifications_empty_field() {
         let mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
 
         let service = ClientService {
             db: Database::Mock(mock_db),

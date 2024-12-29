@@ -38,11 +38,15 @@ use crate::AuthService;
 /// - POST /register - New user registration
 ///
 /// # Example
-/// ```rust,ignore
-/// use kiro_database::db_bridge::Database;
+/// ```rust,no_run
+/// use kiro_client::auth_routes;
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
-/// let db = Database::new("connection_string").await?;
-/// let auth_router = auth_routes(db);
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// auth_routes(Database::Mock(mock_db));
+///
+/// println!("Authentication routes created");
 /// ```
 pub fn auth_routes(db: Database) -> Router {
     let service = AuthService::new(db);

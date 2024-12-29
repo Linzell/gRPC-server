@@ -38,12 +38,32 @@ use crate::SessionModel;
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{AuthService, logout::logout, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = AuthService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = logout(State(service), Extension(session)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     logout(State(service), Extension(session)).await;
+///
+///     println!("Logout successful");
+/// });
 /// ```
 #[utoipa::path(
     get,
@@ -52,7 +72,6 @@ use crate::SessionModel;
     responses(
         (status = 200, description = "Session terminated", body = String),
         (status = 500, description = "Internal server error", body = String)
-
     )
 )]
 pub async fn logout(
@@ -72,25 +91,13 @@ pub async fn logout(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_logout_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
 
         mock_db
             .expect_delete()
@@ -111,7 +118,7 @@ mod tests {
     #[tokio::test]
     async fn test_logout_no_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let session = create_test_session();
+        let session = SessionModel::default();
 
         mock_db
             .expect_delete()

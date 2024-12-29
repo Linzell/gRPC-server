@@ -39,18 +39,48 @@ use crate::{models::UserModel, SessionModel};
 ///
 /// # Errors
 /// * `400 BAD REQUEST` - Invalid password
-/// * `401 UNAUTHORIZED` - No session or invalid session
+/// * `404 NOT FOUND` - User not found
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{ClientService, send_email_to_change_password::send_email_to_change_password, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = send_email_to_change_password(&service, &session).await?;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     send_email_to_change_password(&service, &session).await;
+///
+///     println!("Email change email sent");
+/// });
 /// ```
+#[utoipa::path(
+    get,
+    path = "/user/send_email_to_change_password",
+    tag = "user",
+    responses(
+        (status = 200, description = "Email change email sent", body = String),
+        (status = 404, description = "User not found", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 pub async fn send_email_to_change_password(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
 ) -> impl IntoResponse {

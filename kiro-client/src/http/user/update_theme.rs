@@ -38,23 +38,56 @@ use crate::SessionModel;
 ///   * Error status code with message
 ///
 /// # Errors
-/// * `400 BAD REQUEST` - Invalid theme
-/// * `401 UNAUTHORIZED` - No session or invalid session
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
 ///
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
-/// use kiro_api::user::UpdateThemeRequest;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_api::client::v1::UpdateThemeRequest;
+/// use kiro_client::{ClientService, update_theme::update_theme, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
-/// let session = SessionModel::default();
-/// let request = UpdateThemeRequest {
-///     theme: "dark".to_string(),
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
 /// };
-/// let response = update_theme(&service, &session, request).await?;
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
+/// let session = SessionModel::default();
+///
+/// // Mock request
+/// let request = UpdateThemeRequest {
+///     theme: 0,   // Assuming 0 represents light theme
+/// };
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     update_theme(State(service), Extension(session), Json(request)).await;
+///
+///     println!("Theme updated");
+/// });
 /// ```
+#[utoipa::path(
+    post,
+    path = "/user/update_theme",
+    tag = "user",
+    params(
+        UpdateThemeRequest
+    ),
+    responses(
+        (status = 200, description = "Theme updated", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn update_theme(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
     Json(request): Json<UpdateThemeRequest>,
@@ -77,25 +110,13 @@ pub async fn update_theme(
 mod tests {
     use super::*;
 
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
     use mockall::predicate::eq;
-
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
 
     #[tokio::test]
     async fn test_update_theme_light_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let extension = Extension(test_session.clone());
         let user_id = test_session.user_id.clone();
 
@@ -120,7 +141,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_dark_success() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let extension = Extension(test_session.clone());
         let user_id = test_session.user_id.clone();
 
@@ -145,7 +166,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_db_error() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let extension = Extension(test_session.clone());
         let user_id = test_session.user_id.clone();
 
@@ -176,7 +197,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_admin_session() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let mut admin_session = test_session.clone();
         admin_session.is_admin = true;
         let extension = Extension(admin_session.clone());
@@ -203,7 +224,7 @@ mod tests {
     #[tokio::test]
     async fn test_update_theme_toggle() {
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let extension = Extension(test_session.clone());
         let user_id = test_session.user_id.clone();
 
@@ -226,7 +247,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let mut mock_db = MockDatabaseOperations::new();
-        let test_session = create_test_session();
+        let test_session = SessionModel::default();
         let extension = Extension(test_session.clone());
         let user_id = test_session.user_id.clone();
 

@@ -39,13 +39,42 @@ use crate::SessionModel;
 /// * `500 INTERNAL SERVER ERROR` - Database or server error
 ///
 /// # Example
-/// ```rust,ignore
-/// use axum::{Json, Extension};
-/// use kiro_api::session::SessionModel;
+/// ```rust,no_run
+/// use axum::{Extension, extract::State, Json};
+/// use http::HeaderMap;
+/// use kiro_client::{ClientService, disable_user::disable_user, SessionModel};
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
 ///
+/// // Mock database
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// // Mock service
+/// let service = ClientService {
+///     db: Database::Mock(mock_db),
+/// };
+///
+/// // Empty headers
+/// let headers = HeaderMap::new();
+///
+/// // Mock session
 /// let session = SessionModel::default();
-/// let response = disable_user(State(service), Extension(session)).await;
+///
+/// // Async block to allow `await`
+/// tokio::runtime::Runtime::new().unwrap().block_on(async {
+///     disable_user(State(service), Extension(session)).await;
+///
+///     println!("User deleted");
+/// });
 /// ```
+#[utoipa::path(
+    delete,
+    path = "/user/disable_user",
+    tag = "user",
+    responses(
+        (status = 200, description = "User disabled", body = String),
+        (status = 500, description = "Internal server error", body = String)
+    )
+)]
 pub async fn disable_user(
     State(service): State<ClientService>, Extension(session): Extension<SessionModel>,
 ) -> impl IntoResponse {
@@ -62,25 +91,13 @@ pub async fn disable_user(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SessionModel;
-    use chrono::Utc;
-    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError, DbDateTime, DbId};
-    use mockall::predicate::eq;
 
-    fn create_test_session() -> SessionModel {
-        SessionModel {
-            id: DbId::from(("sessions", "1")),
-            session_key: "session_token".to_string(),
-            expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(2)),
-            user_id: DbId::from(("users", "1")),
-            ip_address: Some("127.0.0.1".to_string()),
-            is_admin: false,
-        }
-    }
+    use kiro_database::{db_bridge::MockDatabaseOperations, DatabaseError};
+    use mockall::predicate::eq;
 
     #[tokio::test]
     async fn test_disable_user_success() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -102,7 +119,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_disable_user_db_error() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session);
 
@@ -123,7 +140,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_disable_user_admin_session() {
-        let mut session = create_test_session();
+        let mut session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 
@@ -147,7 +164,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_disable_user_already_disabled() {
-        let session = create_test_session();
+        let session = SessionModel::default();
         let mut mock_db = MockDatabaseOperations::new();
         let extension = Extension(session.clone());
 

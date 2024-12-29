@@ -39,6 +39,38 @@ pub mod upload_avatar;
 
 use crate::ClientService;
 
+/// Creates and configures user routes
+///
+/// # Arguments
+/// * `db` - Database connection pool
+///
+/// # Returns
+/// Router configured with user endpoints:
+/// - DELETE /delete_user - Delete user
+/// - DELETE /disable_user - Disable user
+/// - GET /read_user - Read user
+/// - POST /update_email - Update email
+/// - POST /update_language - Update language
+/// - POST /update_notifications - Update notifications
+/// - POST /update_password - Update password
+/// - POST /update_privacy - Update privacy
+/// - POST /update_security - Update security
+/// - POST /update_theme - Update theme
+/// - GET /send_email_to_change_email - Send email to change email
+/// - GET /send_email_to_change_password - Send email to change password
+/// - POST /upload_avatar - Upload avatar
+///
+/// # Example
+/// ```rust,no_run
+/// use kiro_client::user_routes;
+/// use kiro_database::db_bridge::{Database, MockDatabaseOperations};
+///
+/// let mock_db = MockDatabaseOperations::new();
+///
+/// user_routes(Database::Mock(mock_db));
+///
+/// println!("User routes created");
+/// ```
 pub fn user_routes(db: Database) -> Router {
     let service = ClientService::new(db);
 
@@ -46,7 +78,7 @@ pub fn user_routes(db: Database) -> Router {
 
     router = router
         .route("/delete_user", delete(delete_user::delete_user))
-        .route("/disable_user", post(disable_user::disable_user))
+        .route("/disable_user", delete(disable_user::disable_user))
         .route("/read_user", get(read_user::read_user))
         .route("/update_email", post(update_email::update_email))
         .route("/update_language", post(update_language::update_language))
@@ -64,11 +96,11 @@ pub fn user_routes(db: Database) -> Router {
         router = router
             .route(
                 "/send_email_to_change_email",
-                post(send_email_to_change_email::send_email_to_change_email),
+                get(send_email_to_change_email::send_email_to_change_email),
             )
             .route(
                 "/send_email_to_change_password",
-                post(send_email_to_change_password::send_email_to_change_password),
+                get(send_email_to_change_password::send_email_to_change_password),
             );
     }
 
@@ -78,4 +110,234 @@ pub fn user_routes(db: Database) -> Router {
     }
 
     router.with_state(service)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{Method, Request, StatusCode},
+    };
+    use kiro_database::db_bridge::MockDatabaseOperations;
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn test_user_routes() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let delete_user_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::DELETE)
+                    .uri("/delete_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            delete_user_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let disable_user_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::DELETE)
+                    .uri("/disable_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            disable_user_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let read_user_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri("/read_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            read_user_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_email_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_email")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_email_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_language_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_language")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_language_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_notifications_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_notifications")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_notifications_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_password_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_password")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_password_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_privacy_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_privacy")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_privacy_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_security_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_security")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_security_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        let update_theme_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_theme")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            update_theme_response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+
+        #[cfg(feature = "mailer")]
+        {
+            let send_email_to_change_email_response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method(Method::GET)
+                        .uri("/send_email_to_change_email")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                send_email_to_change_email_response.status(),
+                StatusCode::INTERNAL_SERVER_ERROR
+            );
+
+            let send_email_to_change_password_response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method(Method::GET)
+                        .uri("/send_email_to_change_password")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                send_email_to_change_password_response.status(),
+                StatusCode::INTERNAL_SERVER_ERROR
+            );
+        }
+
+        #[cfg(feature = "storage")]
+        {
+            let upload_avatar_response = app
+                .oneshot(
+                    Request::builder()
+                        .method(Method::POST)
+                        .uri("/upload_avatar")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                upload_avatar_response.status(),
+                StatusCode::INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }
