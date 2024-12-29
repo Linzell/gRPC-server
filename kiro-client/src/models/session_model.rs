@@ -538,7 +538,7 @@ mod tests {
         mock_db
             .expect_update_field::<DbDateTime>()
             .withf(move |id: &DbId, field: &str, value: &DbDateTime| {
-                let expected_expiration = Utc::now().timestamp() + 2 * 24 * 60 * 60;
+                let expected_expiration = Utc::now().timestamp() + 7 * 24 * 60 * 60;
                 let actual_expiration = value.timestamp();
 
                 *id == test_id
@@ -884,7 +884,7 @@ mod tests {
         mock_db
             .expect_update_field::<DbDateTime>()
             .withf(move |id: &DbId, field: &str, value: &DbDateTime| {
-                let expected_expiration = Utc::now().timestamp() + 2 * 24 * 60 * 60;
+                let expected_expiration = Utc::now().timestamp() + 7 * 24 * 60 * 60;
                 let actual_expiration = value.timestamp();
 
                 *id == test_id  // Use the cloned ID

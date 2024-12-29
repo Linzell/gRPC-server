@@ -26,6 +26,12 @@ pub fn build_auth_service(
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("auth").join("proto_descriptor_v1.bin"))
         .compile_well_known_types(config.compile_well_known_types)
+        .type_attribute(".", "#[derive(utoipa::ToSchema)]")
+        .type_attribute(
+            ".auth.v1.AuthRequest",
+            r#"#[derive(utoipa::IntoParams)]
+            #[into_params(parameter_in = Query)]"#,
+        )
         .extern_path(".google.protobuf", "crate::google::protobuf");
 
     builder.compile(

@@ -20,22 +20,22 @@ use axum::{
 };
 use kiro_database::db_bridge::Database;
 
-mod delete_user;
-mod disable_user;
-mod read_user;
+pub mod delete_user;
+pub mod disable_user;
+pub mod read_user;
 #[cfg(feature = "mailer")]
-mod send_email_to_change_email;
+pub mod send_email_to_change_email;
 #[cfg(feature = "mailer")]
-mod send_email_to_change_password;
-mod update_email;
-mod update_language;
-mod update_notifications;
-mod update_password;
-mod update_privacy;
-mod update_security;
-mod update_theme;
+pub mod send_email_to_change_password;
+pub mod update_email;
+pub mod update_language;
+pub mod update_notifications;
+pub mod update_password;
+pub mod update_privacy;
+pub mod update_security;
+pub mod update_theme;
 #[cfg(feature = "storage")]
-mod upload_avatar;
+pub mod upload_avatar;
 
 use crate::ClientService;
 

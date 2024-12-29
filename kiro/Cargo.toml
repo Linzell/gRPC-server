@@ -9,7 +9,7 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["tracing", "governors", "surrealdb", "client"]
+default = ["tracing", "documentation", "governors", "surrealdb", "client"]
 
 client = ["kiro_client"]
 mailer = ["dep:uuid", "kiro_mailer", "kiro_client/mailer"]
@@ -25,6 +25,12 @@ tracing = [
     "dep:tracing-subscriber",
 ]
 governors = ["dep:tower_governor"]
+documentation = [
+    "kiro_api",
+    "dep:utoipa",
+    "dep:utoipa-swagger-ui",
+    "dep:utoipa-axum",
+]
 
 postgres = ["kiro_database/postgres"]
 surrealdb = ["kiro_database/surrealdb"]
@@ -66,7 +72,6 @@ tonic-reflection = { version = "0.12.3", default-features = false, features = [
 tonic-health = { version = "0.12.3", default-features = false, features = [
     "transport",
 ] }
-tower_governor = { version = "0.4.3", optional = true }
 tower-http = { version = "0.6", default-features = false, features = [
     "auth",
     "cors",
@@ -91,6 +96,17 @@ kiro_mailer = { workspace = true, optional = true }
 # Optional dependencies
 ## Client dependencies
 kiro_client = { workspace = true, optional = true }
+
+# Optional dependencies
+## Dependencies for the governors
+tower_governor = { version = "0.4.3", optional = true }
+
+# Optional dependencies
+## Dependencies for the documentation
+kiro_api = { workspace = true, optional = true }
+utoipa = { workspace = true, optional = true, features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "8", optional = true, features = ["axum"] }
+utoipa-axum = { version = "0.1", optional = true }
 
 # Optional dependencies
 ## Testing dependencies

@@ -46,12 +46,21 @@ pub use services::ClientService;
 /// # Auth HTTP1 Routes
 ///
 /// The auth module provides HTTP1 routes for the authentication service.
-pub use http::auth_routes;
+pub use http::{auth_routes, login, logout, register};
 
 /// # User HTTP1 Routes
 ///
 /// The user module provides HTTP1 routes for the user service.
-pub use http::user_routes;
+pub use http::{
+    delete_user, disable_user, read_user, update_email, update_language, update_notifications,
+    update_password, update_privacy, update_security, update_theme, user_routes,
+};
+
+#[cfg(feature = "mailer")]
+pub use http::{send_email_to_change_email, send_email_to_change_password};
+
+#[cfg(feature = "storage")]
+pub use http::upload_avatar;
 
 /// # Auth Server Builder
 ///

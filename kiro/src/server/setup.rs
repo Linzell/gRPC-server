@@ -29,6 +29,14 @@ use std::sync::Arc;
 #[cfg(feature = "governors")]
 use tower_governor::{governor::GovernorConfigBuilder, GovernorLayer};
 
+#[cfg(feature = "documentation")]
+use utoipa::OpenApi;
+#[cfg(feature = "documentation")]
+use utoipa_swagger_ui::SwaggerUi;
+
+#[cfg(feature = "documentation")]
+use crate::utils::doc::ApiDoc;
+
 #[cfg(feature = "client")]
 use kiro_client::{
     auth_routes, user_routes, AuthService, AuthServiceServer, ClientService, ClientServiceServer,
@@ -84,6 +92,7 @@ pub async fn create_app(
 ) -> Result<axum::Router, crate::error::ServerError> {
     let cors = setup_cors(config.clone())?;
     let mut routes_builder = setup_routes(db.clone()).await?.routes().into_axum_router();
+    let openapi = ApiDoc::openapi();
 
     // Add governors
     #[cfg(feature = "governors")]
@@ -109,6 +118,12 @@ pub async fn create_app(
     #[cfg(feature = "tracing")]
     {
         routes_builder = routes_builder.layer(trace_layer(&config));
+    }
+
+    #[cfg(feature = "documentation")]
+    {
+        routes_builder = routes_builder
+            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", openapi));
     }
 
     routes_builder = routes_builder

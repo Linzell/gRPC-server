@@ -20,9 +20,24 @@ mod user;
 /// # Auth HTTP1 Routes
 ///
 /// The auth module provides HTTP1 routes for the authentication service.
-pub use auth::auth_routes;
+pub use auth::{auth_routes, login, logout, register};
 
 /// # User HTTP1 Routes
 ///
 /// The user module provides HTTP1 routes for the user service.
-pub use user::user_routes;
+pub use user::{
+    delete_user, disable_user, read_user, update_email, update_language, update_notifications,
+    update_password, update_privacy, update_security, update_theme, user_routes,
+};
+
+/// # User HTTP1 Routes (Mailer)
+///
+/// The user module provides HTTP1 routes for the user service with mailer support.
+#[cfg(feature = "mailer")]
+pub use user::{send_email_to_change_email, send_email_to_change_password};
+
+/// # User HTTP1 Routes (Storage)
+///
+/// The user module provides HTTP1 routes for the user service with storage support.
+#[cfg(feature = "storage")]
+pub use user::upload_avatar;

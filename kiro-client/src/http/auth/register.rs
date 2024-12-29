@@ -60,6 +60,23 @@ use crate::{
 /// let headers = HeaderMap::new();
 /// let response = register(State(service), headers, request).await;
 /// ```
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    tag = "auth",
+    params(
+        AuthRequest
+    ),
+    responses(
+        (status = 200, description = "Session created", body = Session),
+        (status = 400, description = "Invalid password format", body = String),
+        (status = 401, description = "Invalid password", body = String),
+        (status = 404, description = "User not found", body = String),
+        (status = 409, description = "User already exists", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn register(
     State(service): State<AuthService>, headers: HeaderMap, Json(request): Json<AuthRequest>,
 ) -> impl IntoResponse {

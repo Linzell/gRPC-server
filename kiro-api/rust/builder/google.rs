@@ -25,7 +25,8 @@ pub fn build_google_protos(
         .out_dir(out_dir.join("google"))
         .protoc_arg("--experimental_allow_proto3_optional")
         .file_descriptor_set_path(out_dir.join("google").join("proto_descriptor_v1.bin"))
-        .compile_well_known_types(config.compile_well_known_types);
+        .compile_well_known_types(config.compile_well_known_types)
+        .type_attribute(".", "#[derive(utoipa::ToSchema)]");
 
     builder.compile(
         &[

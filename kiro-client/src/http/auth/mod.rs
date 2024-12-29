@@ -20,9 +20,9 @@ use axum::{
 };
 use kiro_database::db_bridge::Database;
 
-mod login;
-mod logout;
-mod register;
+pub mod login;
+pub mod logout;
+pub mod register;
 
 use crate::AuthService;
 

@@ -45,6 +45,16 @@ use crate::SessionModel;
 /// let session = SessionModel::default();
 /// let response = logout(State(service), Extension(session)).await;
 /// ```
+#[utoipa::path(
+    get,
+    path = "/auth/logout",
+    tag = "auth",
+    responses(
+        (status = 200, description = "Session terminated", body = String),
+        (status = 500, description = "Internal server error", body = String)
+
+    )
+)]
 pub async fn logout(
     State(service): State<AuthService>, Extension(session): Extension<SessionModel>,
 ) -> impl IntoResponse {

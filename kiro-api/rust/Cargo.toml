@@ -37,6 +37,7 @@ tonic = { workspace = true, default-features = false, features = [
     "prost",
 ], optional = true }
 tokio = { workspace = true, features = ["macros"], optional = true }
+utoipa = { workspace = true, features = ["axum_extras", "macros"] }
 
 # Optional dependencies
 ## Dependencies for database backends

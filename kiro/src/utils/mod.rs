@@ -14,6 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// # Documentation
+///
+/// The utils module provides a collection of utilities for working with various parts of the application.
+#[cfg(feature = "documentation")]
+pub mod doc;
+
 /// # gRPC Utilities
 ///
 /// The gRPC utilities module provides helper functions for working with gRPC services.
