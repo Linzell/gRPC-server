@@ -17,35 +17,6 @@
 /// # PasswordError
 ///
 /// The PasswordError enum is an enum that represents the errors for passwords.
-///
-/// ```rust,ignore
-/// #[derive(Debug, Error, PartialEq)]
-/// pub enum PasswordError {
-///   #[error("Password too short. Minimum size: {} characters", PASS_MIN_LENGTH)]
-///   TooShort,
-///
-///   #[error("Password too long. Maximum size: {} characters", PASS_MAX_LENGTH)]
-///   TooLong,
-///
-///   #[error(
-///     "Password doesn't contain enough Special characters. Minimum special characters: {}",
-///     PASS_MIN_SYMBOLS
-///   )]
-///   NotEnoughSymbols,
-///
-///   #[error(
-///     "Password doesn't contain enough Digits. Minimum digits: {}",
-///     PASS_MIN_DIGITS
-///   )]
-///   NotEnoughDigits,
-///
-///   #[error(
-///     "Password doesn't contain enough Letters. Minimum letters: {}",
-///     PASS_MIN_LETTERS
-///   )]
-///   NotEnoughLetters,
-/// }
-/// ```
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum PasswordError {
     #[error("Password too short. Minimum size: {} characters", PASS_MIN_LENGTH)]
@@ -87,12 +58,6 @@ const SPECIAL_SYMBOLS: &str = "-_/\\(){}[]|!@#$%^&*)+=\"\';:<>,.?";
 /// # Contains number
 ///
 /// The `contains_number` method returns the number of characters in a password.
-///
-/// ```rust,ignore
-/// let number = contains_number(password, allowed);
-///
-/// println!("🔢 Number: {:?}", number);
-/// ```
 fn contains_number(pass: &str, allowed: &str) -> usize {
     let mut i: usize = 0;
     for character in pass.chars() {
@@ -106,12 +71,6 @@ fn contains_number(pass: &str, allowed: &str) -> usize {
 /// # Valid password
 ///
 /// The `valid_password` method returns a result if the password is valid.
-///
-/// ```rust,ignore
-/// let result = valid_password(password);
-///
-/// println!("✅ Result: {:?}", result);
-/// ```
 pub fn valid_password(password: &str) -> Result<(), PasswordError> {
     if password.len() < PASS_MIN_LENGTH {
         return Err(PasswordError::TooShort);

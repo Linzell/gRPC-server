@@ -14,13 +14,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// Descriptor set for v1 client protocol buffers.
+/// This is used for reflection and dynamic message handling.
 pub const CLIENT_V1_FILE_DESCRIPTOR_SET: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/client/proto_descriptor_v1.bin"));
 
+/// Version 1 of the client protocol.
+/// Contains generated code from protocol buffer definitions.
 pub mod v1 {
     include!(concat!(env!("OUT_DIR"), "/client/client.v1.rs"));
     #[cfg(feature = "json")]
     include!(concat!(env!("OUT_DIR"), "/client/client.v1.serde.rs"));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_descriptor_set_not_empty() {
+        assert!(!CLIENT_V1_FILE_DESCRIPTOR_SET.is_empty());
+    }
+
+    #[test]
+    fn test_proto_generated() {
+        // Verify the proto module is accessible
+        assert!(std::fs::metadata(concat!(env!("OUT_DIR"), "/client/client.v1.rs")).is_ok());
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn test_serde_generated() {
+        // Verify the serde module is accessible when json feature enabled
+        assert!(std::fs::metadata(concat!(env!("OUT_DIR"), "/client/client.v1.serde.rs")).is_ok());
+    }
 }
 
 // #[cfg(feature = "surrealdb")]

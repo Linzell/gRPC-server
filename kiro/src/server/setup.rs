@@ -36,6 +36,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[cfg(any(feature = "client", feature = "documentation"))]
 use crate::server::docs::ClientDoc;
+use crate::{config::CertificateConfig, server::certificate::CertificateManager};
 
 #[cfg(feature = "client")]
 use kiro_client::{
@@ -49,15 +50,14 @@ use crate::middleware::logging::trace_layer;
 
 use super::{health, Database};
 
-pub async fn create_tls_config() -> Result<RustlsConfig, io::Error> {
-    let cert = tokio::fs::read("certs/cert.pem").await?;
-    let key = tokio::fs::read("certs/key.pem").await?;
-    let config = RustlsConfig::from_pem(cert, key).await?;
+pub async fn create_tls_config(config: &CertificateConfig) -> Result<RustlsConfig, io::Error> {
+    let cert_manager = CertificateManager::new(config.clone());
+    let tls_config = cert_manager.setup().await?;
 
     #[cfg(feature = "tracing")]
     tracing::info!("🔐 TLS configuration loaded");
 
-    Ok(config)
+    Ok(tls_config)
 }
 
 pub async fn setup_health_reporter(health_reporter: &mut HealthReporter) {

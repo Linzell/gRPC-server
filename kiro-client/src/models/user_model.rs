@@ -54,10 +54,24 @@ pub enum Theme {
     System = 2,
 }
 
-/// Represents user settings related to notifications
+/// # Represents user settings related to notifications
 ///
 /// Controls different notification channels including email, push notifications,
 /// and SMS messages
+///
+/// # Model
+///
+/// ```rust,no_run
+/// use kiro_client::NotificationSettings;
+///
+/// let settings = NotificationSettings {
+///     email: true,
+///     push: true,
+///     sms: false,
+/// };
+///
+/// println!("{:?}", settings);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationSettings {
     /// Enable/disable email notifications
@@ -79,9 +93,32 @@ impl Default for NotificationSettings {
     }
 }
 
-/// Represents user privacy settings
+impl From<&NotificationSettings> for Notifications {
+    fn from(row: &NotificationSettings) -> Self {
+        Self {
+            email: row.email,
+            push: row.push,
+            sms: row.sms,
+        }
+    }
+}
+
+/// # Represents user privacy settings
 ///
 /// Controls data collection and location tracking preferences
+///
+/// # Model
+///
+/// ```rust,no_run
+/// use kiro_client::PrivacySettings;
+///
+/// let settings = PrivacySettings {
+///     data_collection: true,
+///     location: false,
+/// };
+///
+/// println!("{:?}", settings);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrivacySettings {
     /// Enable/disable data collection
@@ -100,9 +137,32 @@ impl Default for PrivacySettings {
     }
 }
 
-/// Represents user security settings
+impl From<&PrivacySettings> for Privacy {
+    fn from(row: &PrivacySettings) -> Self {
+        Self {
+            data_collection: row.data_collection,
+            location: row.location,
+        }
+    }
+}
+
+/// # Represents user security settings
 ///
 /// Controls authentication and security related preferences
+///
+/// # Model
+///
+/// ```rust,no_run
+/// use kiro_client::SecuritySettings;
+///
+/// let settings = SecuritySettings {
+///     two_factor: true,
+///     qr_code: "qr_code".to_string(),
+///     magic_link: true,
+/// };
+///
+/// println!("{:?}", settings);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecuritySettings {
     /// Enable/disable two-factor authentication
@@ -124,6 +184,16 @@ impl Default for SecuritySettings {
     }
 }
 
+impl From<&SecuritySettings> for Security {
+    fn from(row: &SecuritySettings) -> Self {
+        Self {
+            two_factor: row.two_factor,
+            qr_code: row.qr_code.clone(),
+            magic_link: row.magic_link,
+        }
+    }
+}
+
 /// User Settings Model
 ///
 /// Comprehensive settings model that represents all user preferences including:
@@ -134,7 +204,10 @@ impl Default for SecuritySettings {
 /// - Security configurations
 ///
 /// # Example
-/// ```rust,ignore
+///
+/// ```rust,no_run
+/// use kiro_client::{Language, Theme, UserSettings, NotificationSettings, PrivacySettings, SecuritySettings};
+///
 /// let settings = UserSettings {
 ///     language: Some(Language::English),
 ///     theme: Some(Theme::Dark),
@@ -146,6 +219,8 @@ impl Default for SecuritySettings {
 ///         magic_link: true
 ///     },
 /// };
+///
+/// println!("{:?}", settings);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserSettings {
@@ -169,11 +244,24 @@ impl Default for UserSettings {
     }
 }
 
+impl From<&UserSettings> for Settings {
+    fn from(row: &UserSettings) -> Self {
+        Self {
+            language: row.language.map(|l| l as i32),
+            theme: row.theme.map(|l| l as i32),
+            notifications: Some(Notifications::from(&row.notifications)),
+            privacy: Some(Privacy::from(&row.privacy)),
+            security: Some(Security::from(&row.security)),
+        }
+    }
+}
+
 /// User Model
 ///
 /// Core user model containing all user data and settings
 ///
 /// # Fields
+///
 /// - `id`: Unique identifier for the user
 /// - `customer_id`: Optional external customer reference
 /// - `email`: User's email address (unique)
@@ -187,9 +275,15 @@ impl Default for UserSettings {
 /// - `is_admin`: Administrative privileges flag
 ///
 /// # Example
-/// ```rust,ignore
+///
+/// ```rust,no_run
+/// use kiro_client::{UserModel, Language, Theme, UserSettings, NotificationSettings, PrivacySettings, SecuritySettings};
+/// use kiro_database::{DbId, DbDateTime};
+/// use chrono::Utc;
+///
+/// // Create new user model
 /// let user = UserModel {
-///     id: DbId::new(),
+///     id: DbId::default(),
 ///     customer_id: Some("cust_123".to_string()),
 ///     email: "user@example.com".to_string(),
 ///     password_hash: "hashed_password".to_string(),
@@ -206,8 +300,8 @@ impl Default for UserSettings {
 ///         }
 ///     },
 ///     groups: vec![],
-///     created_at: DbDateTime::now(),
-///     updated_at: DbDateTime::now(),
+///     created_at: DbDateTime::from(Utc::now()),
+///     updated_at: DbDateTime::from(Utc::now()),
 ///     activated: true,
 ///     is_admin: false,
 /// };
@@ -225,6 +319,13 @@ pub struct UserModel {
     pub updated_at: DbDateTime,
     pub activated: bool,
     pub is_admin: bool,
+}
+
+impl HasId for UserModel {
+    type Id = DbId;
+    fn id(&self) -> &Self::Id {
+        &self.id
+    }
 }
 
 // WARNING: This is a default implementation for testing purposes only
@@ -253,75 +354,6 @@ impl Default for UserModel {
     }
 }
 
-/// Create User Model
-///
-/// Data structure for creating new user accounts with minimal required information
-///
-/// # Fields
-/// - `email`: User's email address
-/// - `password_hash`: Hashed password for authentication
-///
-/// # Example
-/// ```rust,ignore
-/// let new_user = kiro_client::CreateUserModel {
-///     email: "new@example.com".to_string(),
-///     password_hash: "secure_hash".to_string(),
-/// };
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateUserModel {
-    pub email: String,
-    pub password_hash: String,
-}
-
-impl HasId for UserModel {
-    type Id = DbId;
-    fn id(&self) -> &Self::Id {
-        &self.id
-    }
-}
-
-impl From<&SecuritySettings> for Security {
-    fn from(row: &SecuritySettings) -> Self {
-        Self {
-            two_factor: row.two_factor,
-            qr_code: row.qr_code.clone(),
-            magic_link: row.magic_link,
-        }
-    }
-}
-
-impl From<&PrivacySettings> for Privacy {
-    fn from(row: &PrivacySettings) -> Self {
-        Self {
-            data_collection: row.data_collection,
-            location: row.location,
-        }
-    }
-}
-
-impl From<&NotificationSettings> for Notifications {
-    fn from(row: &NotificationSettings) -> Self {
-        Self {
-            email: row.email,
-            push: row.push,
-            sms: row.sms,
-        }
-    }
-}
-
-impl From<&UserSettings> for Settings {
-    fn from(row: &UserSettings) -> Self {
-        Self {
-            language: row.language.map(|l| l as i32),
-            theme: row.theme.map(|l| l as i32),
-            notifications: Some(Notifications::from(&row.notifications)),
-            privacy: Some(Privacy::from(&row.privacy)),
-            security: Some(Security::from(&row.security)),
-        }
-    }
-}
-
 impl From<&UserModel> for User {
     fn from(row: &UserModel) -> Self {
         Self {
@@ -329,6 +361,44 @@ impl From<&UserModel> for User {
             avatar: row.avatar.clone(),
             settings: Some(Settings::from(&row.settings)),
             is_admin: row.is_admin,
+        }
+    }
+}
+
+/// Create User Model
+///
+/// Data structure for creating new user accounts with minimal required information
+///
+/// # Fields
+///
+/// - `email`: User's email address
+/// - `password_hash`: Hashed password for authentication
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use kiro_client::CreateUserModel;
+///
+/// // Create new user model
+/// let new_user = kiro_client::CreateUserModel {
+///     email: "new@example.com".to_string(),
+///     password_hash: "secure_hash".to_string(),
+/// };
+///
+/// println!("{:?}", new_user);
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateUserModel {
+    pub email: String,
+    pub password_hash: String,
+}
+
+// WARNING: This is a default implementation for testing purposes only
+impl Default for CreateUserModel {
+    fn default() -> Self {
+        Self {
+            email: "test@example.com".to_string(),
+            password_hash: "secure_hash".to_string(),
         }
     }
 }
@@ -347,8 +417,23 @@ impl UserModel {
     /// * `Err(ClientError)` - Database error or user not found
     ///
     /// # Example
-    /// ```rust,ignore
-    /// let user = UserModel::get_user_by_email(&db, "user@example.com".to_string()).await?;
+    ///
+    /// ```rust,no_run
+    /// use kiro_client::UserModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Mail
+    /// let email = "user@example.com".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///    let user = UserModel::get_user_by_email(&db, email).await;
+    ///
+    ///    println!("{:?}", user);
+    /// });
     /// ```
     pub async fn get_user_by_email<DB: DatabaseOperations + Send + Sync>(
         db: &DB, email: String,
@@ -373,8 +458,23 @@ impl UserModel {
     /// * `Err(ClientError)` - Database error
     ///
     /// # Example
-    /// ```rust,ignore
-    /// let available = UserModel::check_email(&db, "new@example.com".to_string()).await?;
+    ///
+    /// ```rust,no_run
+    /// use kiro_client::UserModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Mail
+    /// let email = "user@example.com".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///    let available = UserModel::check_email(&db, email).await;
+    ///
+    ///    println!("{:?}", available);
+    /// });
     /// ```
     pub async fn check_email<DB: DatabaseOperations + Send + Sync>(
         db: &DB, email: String,

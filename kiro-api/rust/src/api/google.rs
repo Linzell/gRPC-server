@@ -19,3 +19,21 @@ pub mod protobuf {
     #[cfg(feature = "json")]
     include!(concat!(env!("OUT_DIR"), "/google/google.protobuf.serde.rs"));
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_proto_generated() {
+        // Verify the proto module is accessible
+        assert!(std::fs::metadata(concat!(env!("OUT_DIR"), "/google/google.protobuf.rs")).is_ok());
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn test_serde_generated() {
+        // Verify the serde module is accessible when json feature enabled
+        assert!(
+            std::fs::metadata(concat!(env!("OUT_DIR"), "/google/google.protobuf.serde.rs")).is_ok()
+        );
+    }
+}

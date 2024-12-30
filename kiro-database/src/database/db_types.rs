@@ -263,7 +263,7 @@ impl<'de> Deserialize<'de> for DbIdentifier {
         {
             struct DbIdentifierVisitor;
 
-            impl<'de> Visitor<'de> for DbIdentifierVisitor {
+            impl Visitor<'_> for DbIdentifierVisitor {
                 type Value = DbIdentifier;
 
                 fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

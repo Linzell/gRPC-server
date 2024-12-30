@@ -60,5 +60,4 @@ use utoipa::OpenApi;
         description = "API for Kiro",
     )
 )]
-
 pub struct ClientDoc;

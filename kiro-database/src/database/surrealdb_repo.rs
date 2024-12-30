@@ -26,35 +26,28 @@ use crate::{database::db_types::DbId, error::DatabaseError, utils::env::get_env_
 
 /// # SurrealDBRepo
 ///
-/// The `SurrealDBRepo` struct is a struct that represents a repository for the SurrealDB database.
+/// Repository implementation for SurrealDB database connectivity and operations.
 ///
-/// ```rust,ignore
-/// #[derive(Clone)]
-/// pub struct SurrealDBRepo {
-///     pub db: Surreal<Any>,
+/// ## Features
+/// - Manages database connection and authentication
+/// - Handles database migrations
+/// - Provides transaction support
+/// - Support for multiple database namespaces
+///
+/// ## Examples
+/// ```rust,no_run
+/// use db::SurrealDBRepo;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     // Initialize database connection
+///     let repo = SurrealDBRepo::init().await?;
+///
+///     // Migrate database schema
+///     SurrealDBRepo::migrate(repo.db.clone()).await?;
+///
+///     Ok(())
 /// }
-/// ```
-///
-/// ## Methods
-///
-/// ### Init
-///
-/// The `init` method initializes the SurrealDB connection.
-///
-/// ```rust,ignore
-/// let db = SurrealDBRepo::init().await?;
-///
-/// println!("🦋 Database: {:?}", db);
-/// ```
-///
-/// ### Migrate
-///
-/// The `migrate` method migrates the database.
-///
-/// ```rust,ignore
-/// SurrealDBRepo::migrate().await?;
-///
-/// println!("🦋 Database migrated");
 /// ```
 #[derive(Clone)]
 pub struct SurrealDBRepo {
@@ -63,15 +56,24 @@ pub struct SurrealDBRepo {
 
 /// # Record
 ///
-/// The `Record` struct is a struct that represents a record in the SurrealDB database.
+/// Generic record type for SurrealDB stored data.
 ///
-/// ```rust,ignore
-/// #[derive(Debug, Serialize, Deserialize, PartialEq)]
-/// pub struct Record<T> {
-///     id: DbId,
-///     #[serde(flatten)]
-///     data: T,
-/// }
+/// ## Type Parameters
+/// - `T`: The wrapped data type for the record
+///
+/// ## Fields
+/// - `id`: Unique record identifier
+/// - `data`: The actual record data
+///
+/// ## Examples
+/// ```rust
+/// use db::{Record, User};
+///
+/// let user = User { name: "Alice".into() };
+/// let record = Record {
+///     id: DbId::new("user"),
+///     data: user
+/// };
 /// ```
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Record<T> {
@@ -81,14 +83,21 @@ pub struct Record<T> {
 }
 
 impl SurrealDBRepo {
-    /// # Init
+    /// Initializes a new SurrealDB connection with authentication
     ///
-    /// The `init` method initializes the SurrealDB connection.
+    /// # Environment Variables
+    /// - `SURREAL_DB_HOST`: Database host URL (default: ws://127.0.0.1:8000)
+    /// - `SURREAL_USER`: Database username (default: root)
+    /// - `SURREAL_PASS`: Database password (default: root)
+    /// - `SURREAL_NAMESPACE`: Database namespace (default: test)
+    /// - `SURREAL_DATABASE`: Database name (default: test)
     ///
-    /// ```rust,ignore
-    /// let db = SurrealDBRepo::init().await?;
+    /// # Returns
+    /// - `Result<Self, DatabaseError>`: Connected repository instance
     ///
-    /// println!("🦋 Database: {:?}", db);
+    /// # Examples
+    /// ```rust,no_run
+    /// let repo = SurrealDBRepo::init().await?;
     /// ```
     pub async fn init() -> Result<Self, DatabaseError> {
         #[cfg(feature = "tracing")]
@@ -171,14 +180,17 @@ impl SurrealDBRepo {
         Ok(Self { db })
     }
 
-    /// # Migrate
+    /// Runs database migrations to update schema
     ///
-    /// The `migrate` method migrates the database.
+    /// # Arguments
+    /// - `db`: Database connection instance
     ///
-    /// ```rust,ignore
-    /// SurrealDBRepo::migrate().await?;
+    /// # Returns
+    /// - `Result<(), DatabaseError>`: Success or error
     ///
-    /// println!("🦋 Database migrated");
+    /// # Examples
+    /// ```rust,no_run
+    /// SurrealDBRepo::migrate(db).await?;
     /// ```
     pub async fn migrate(db: Surreal<Any>) -> Result<(), DatabaseError> {
         #[cfg(feature = "tracing")]
@@ -195,5 +207,44 @@ impl SurrealDBRepo {
         tracing::info!("🎉 Database is ready");
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio;
+
+    #[tokio::test]
+    async fn test_init_connection() {
+        let result = SurrealDBRepo::init().await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_migrations() {
+        let repo = SurrealDBRepo::init().await.unwrap();
+        let result = SurrealDBRepo::migrate(repo.db).await;
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_record_serialization() {
+        #[derive(Debug, Serialize, Deserialize, PartialEq)]
+        struct TestData {
+            value: String,
+        }
+
+        let record = Record {
+            id: DbId::default(),
+            data: TestData {
+                value: "default".into(),
+            },
+        };
+
+        let serialized = serde_json::to_string(&record).unwrap();
+        let deserialized: Record<TestData> = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(record, deserialized);
     }
 }

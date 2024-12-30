@@ -14,8 +14,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// Version 1 of the common module containing protocol buffer generated code
+///
+/// This module contains the generated code from the common.proto file for version 1
+/// of the protocol. It includes both the base proto types as well as optional
+/// serde serialization support when the "json" feature is enabled.
 pub mod v1 {
     include!(concat!(env!("OUT_DIR"), "/common/common.v1.rs"));
     #[cfg(feature = "json")]
     include!(concat!(env!("OUT_DIR"), "/common/common.v1.serde.rs"));
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_proto_generated() {
+        // Verify the proto module is accessible
+        assert!(std::fs::metadata(concat!(env!("OUT_DIR"), "/common/common.v1.rs")).is_ok());
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn test_serde_generated() {
+        // Verify the serde module is accessible when json feature enabled
+        assert!(std::fs::metadata(concat!(env!("OUT_DIR"), "/common/common.v1.serde.rs")).is_ok());
+    }
 }

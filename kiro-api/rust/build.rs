@@ -14,10 +14,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Build script for generating protocol buffer code
+//!
+//! This build script handles the compilation of protocol buffer definitions into Rust code.
+//! It supports building common protos, Google API protos, and service-specific protos based
+//! on enabled feature flags.
+
 mod builder;
 mod config;
 mod utils;
 
+/// Main build function that orchestrates the protocol buffer compilation process
+///
+/// # Returns
+///
+/// Returns `Ok(())` if compilation succeeds, or an error if any step fails
+///
+/// # Errors
+///
+/// Will return an error if:
+/// - Output/proto directories cannot be accessed
+/// - Directory creation fails
+/// - Proto compilation fails for any service
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let out_dir = utils::get_out_dir()?;
     let proto_dir = utils::get_proto_dir()?;
@@ -42,4 +60,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // builder::build_group_service(&out_dir, &proto_dir, &proto_dir)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_output_directory_creation() {
+        let test_dir = PathBuf::from("target/test_out");
+        utils::create_output_directories(&test_dir).unwrap();
+        assert!(test_dir.exists());
+    }
+
+    #[test]
+    fn test_proto_directory_exists() {
+        let proto_dir = utils::get_proto_dir().unwrap();
+        assert!(proto_dir.exists());
+    }
+
+    #[test]
+    fn test_out_directory_exists() {
+        let out_dir = utils::get_out_dir().unwrap();
+        assert!(out_dir.exists());
+    }
 }

@@ -1,7 +1,7 @@
 .PHONY: dist
 
 dist:
-	    cargo watch -x run
+	    cargo run
 
 test:
 	    cargo fmt --check

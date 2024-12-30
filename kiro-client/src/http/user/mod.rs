@@ -120,6 +120,7 @@ mod tests {
         http::{Method, Request, StatusCode},
     };
     use kiro_database::db_bridge::MockDatabaseOperations;
+    use serde_json::json;
     use tower::ServiceExt;
 
     #[tokio::test]
@@ -339,5 +340,279 @@ mod tests {
                 StatusCode::INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    #[tokio::test]
+    async fn test_delete_user() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::DELETE)
+                    .uri("/delete_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_disable_user() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::DELETE)
+                    .uri("/disable_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_read_user() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri("/read_user")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_email() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_email_request = json!({
+            "email": "test@test.com".to_string(),
+            "temp_token": "temp_token".to_string(),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_email")
+                    .body(Body::from(update_email_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_language() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_language_request = json!({
+            "language": 0,
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_language")
+                    .body(Body::from(update_language_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_notifications() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_notifications_request = json!({
+            "field": "email".to_string(),
+            "value": true,
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_notifications")
+                    .body(Body::from(update_notifications_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_password() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_password_request = json!({
+            "temp_token": "temp_token".to_string(),
+            "old_password": "old_password".to_string(),
+            "password": "new_password".to_string(),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_password")
+                    .body(Body::from(update_password_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_privacy() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_privacy_request = json!({
+            "field": "data_collection".to_string(),
+            "value": true,
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_privacy")
+                    .body(Body::from(update_privacy_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_security() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_security_request = json!({
+            "field": "two_factor".to_string(),
+            "value": true,
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_security")
+                    .body(Body::from(update_security_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn test_update_theme() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let update_theme_request = json!({
+            "theme": 0,
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/update_theme")
+                    .body(Body::from(update_theme_request.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[cfg(feature = "mailer")]
+    #[tokio::test]
+    async fn test_send_email_to_change_email() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri("/send_email_to_change_email")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[cfg(feature = "mailer")]
+    #[tokio::test]
+    async fn test_send_email_to_change_password() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::GET)
+                    .uri("/send_email_to_change_password")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[cfg(feature = "storage")]
+    #[tokio::test]
+    async fn test_upload_avatar() {
+        let mock_db = MockDatabaseOperations::new();
+        let app = user_routes(Database::Mock(mock_db));
+
+        let multipart =
+            axum::extract::MultipartMultipart::new(headers, "boundary".to_string(), Vec::new());
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(Method::POST)
+                    .uri("/upload_avatar")
+                    .body(Body::from(multipart))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

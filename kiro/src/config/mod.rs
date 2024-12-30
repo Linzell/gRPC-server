@@ -15,12 +15,14 @@
 // limitations under the License.
 
 mod app;
+mod certificate;
 mod logging_config;
 mod ports;
 
 pub use app::AppConfig;
 #[cfg(feature = "mailer")]
 pub use app::Environment;
+pub use certificate::CertificateConfig;
 pub use logging_config::{ErrorContext, ErrorSeverity, LoggingConfig};
 pub use ports::Ports;
 
@@ -31,6 +33,7 @@ use crate::error::ServerError;
 pub struct Config {
     pub app: AppConfig,
     pub ports: Ports,
+    pub certificate: CertificateConfig,
 }
 
 impl Config {
@@ -39,6 +42,7 @@ impl Config {
         Ok(Self {
             app: AppConfig::init()?,
             ports: Ports::init()?,
+            certificate: CertificateConfig::init()?,
         })
     }
 }

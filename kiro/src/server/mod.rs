@@ -18,6 +18,7 @@ use axum_server::{tls_rustls::RustlsConfig, Handle};
 use kiro_database::db_bridge::Database;
 use std::net::SocketAddr;
 
+mod certificate;
 #[cfg(feature = "documentation")]
 mod docs;
 mod health;
@@ -42,7 +43,7 @@ impl Server {
     ) -> Result<Self, crate::error::ServerError> {
         Ok(Self {
             addr,
-            tls_config: setup::create_tls_config().await?,
+            tls_config: setup::create_tls_config(&config.certificate).await?,
             handle: Handle::new(),
             config,
         })

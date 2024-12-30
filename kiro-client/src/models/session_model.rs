@@ -53,16 +53,21 @@ static ENCRYPTION_KEY: Lazy<[u8; 32]> = Lazy::new(|| {
 ///
 /// ## Model
 ///
-/// ```rust,ignore
-/// #[derive(Debug, Clone, Serialize, Deserialize)]
-/// pub struct SessionModel {
-///   pub id: DbId,
-///   pub session_key: String,
-///   pub expires_at: DbDateTime,
-///   pub user_id: DbId,
-///   pub ip_address: Option<String>,
-///   pub is_admin: bool,
-/// }
+/// ```rust,no_run
+/// use chrono::Utc;
+/// use kiro_database::{DbDateTime, DbId};
+/// use kiro_client::SessionModel;
+///
+/// let session = SessionModel {
+///     id: DbId::default(),
+///     session_key: "session_token".to_string(),
+///     expires_at: DbDateTime::from(Utc::now() + chrono::Duration::days(7)),
+///     user_id: DbId::default(),
+///     ip_address: Some("127.0.0.1".to_string()),
+///     is_admin: false,
+/// };
+///
+/// println!("🗝️ Session: {:?}", session);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionModel {
@@ -72,6 +77,13 @@ pub struct SessionModel {
     pub user_id: DbId,
     pub ip_address: Option<String>,
     pub is_admin: bool,
+}
+
+impl HasId for SessionModel {
+    type Id = DbId;
+    fn id(&self) -> &Self::Id {
+        &self.id
+    }
 }
 
 // WARNING: This is a default implementation for testing purposes only
@@ -94,16 +106,21 @@ impl Default for SessionModel {
 ///
 /// ## Model
 ///
-/// ```rust,ignore
-/// #[derive(Clone, Serialize, Deserialize)]
-/// pub struct CreateSessionModel {
-///   pub session_key: String,
-///   pub user_id: DbId,
-///   pub is_admin: bool,
-///   pub ip_address: Option<String>,
-/// }
+/// ```rust,no_run
+/// use kiro_database::DbId;
+/// use kiro_client::CreateSessionModel;
+///
+/// // Create session model
+/// let create_session = CreateSessionModel {
+///   session_key: "session_token".to_string(),
+///   user_id: DbId::default(),
+///   is_admin: false,
+///   ip_address: Some("127.0.0.1".to_string()),
+/// };
+///
+/// println!("🗝️ Create session: {:?}", create_session);
 /// ```
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSessionModel {
     pub session_key: String,
     pub user_id: DbId,
@@ -111,10 +128,15 @@ pub struct CreateSessionModel {
     pub ip_address: Option<String>,
 }
 
-impl HasId for SessionModel {
-    type Id = DbId;
-    fn id(&self) -> &Self::Id {
-        &self.id
+// WARNING: This is a default implementation for testing purposes only
+impl Default for CreateSessionModel {
+    fn default() -> Self {
+        Self {
+            session_key: "session_token".to_string(),
+            user_id: DbId::default(),
+            is_admin: false,
+            ip_address: Some("127.0.0.1".to_string()),
+        }
     }
 }
 
@@ -122,19 +144,14 @@ impl SessionModel {
     /// # Check if session is expired
     ///
     /// The `is_expired` method checks if a session is expired.
-    ///
-    /// ```rust,ignore
-    /// let expires_at = DbDateTime::now();
-    /// let is_expired = SessionModel::is_expired(&expires_at);
-    ///
-    /// println!("🗝️ Session expired: {:?}", is_expired);
-    /// ```
     fn is_expired(expires_at: &DbDateTime) -> bool {
         let expiration = expires_at.timestamp();
         Utc::now().timestamp() > expiration
     }
 
-    /// Encrypt user ID using AES-GCM
+    /// # Encrypt user ID using AES-GCM
+    ///
+    /// The `encrypt_user_id` method encrypts a user ID using AES-GCM.
     fn encrypt_user_id(user_id: &DbId, key: &[u8; 32]) -> Result<String, ClientError> {
         let cipher = Aes256Gcm::new(key.into());
 
@@ -158,7 +175,9 @@ impl SessionModel {
         Ok(URL_SAFE.encode(combined))
     }
 
-    /// Decrypt user ID using AES-GCM
+    /// # Decrypt user ID using AES-GCM
+    ///
+    /// The `decrypt_user_id` method decrypts a user ID using AES-GCM.
     fn decrypt_user_id(encrypted: &str, key: &[u8; 32]) -> Result<DbId, ClientError> {
         let combined = URL_SAFE
             .decode(encrypted)
@@ -185,10 +204,30 @@ impl SessionModel {
     ///
     /// The `create_session` method creates a session.
     ///
-    /// ```rust,ignore
-    /// let session = SessionStore::create_session(&db, user_id, is_admin, Some(ip_address)).await?;
+    /// ## Example
     ///
-    /// println!("🗝️ Session: {:?}", session);
+    /// ```rust,no_run
+    /// use kiro_client::{SessionModel, CreateSessionModel};
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // User ID
+    /// let user_id = DbId::default();
+    ///
+    /// // Is admin
+    /// let is_admin = false;
+    ///
+    /// // IP address
+    /// let ip_address = "127.0.0.1".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let session = SessionModel::create_session(&db, user_id, is_admin, Some(ip_address)).await;
+    ///
+    ///     println!("🗝️ Session: {:?}", session);
+    /// });
     /// ```
     pub async fn create_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, user_id: DbId, is_admin: bool, ip_address: Option<String>,
@@ -214,10 +253,24 @@ impl SessionModel {
     ///
     /// The `get_session` method gets a session.
     ///
-    /// ```rust,ignore
-    /// let session = SessionStore::get_session(&db, encrypted_user_id).await?;
+    /// ## Example
     ///
-    /// println!("🗝️ Session: {:?}", session);
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Encrypted user ID
+    /// let encrypted_user_id = "encrypted_user_id".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let session = SessionModel::get_session(&db, encrypted_user_id).await;
+    ///
+    ///     println!("🗝️ Session: {:?}", session);
+    /// });
     /// ```
     pub async fn get_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, encrypted_user_id: String,
@@ -247,10 +300,27 @@ impl SessionModel {
     ///
     /// The `get_token_by_user_id` method gets a token by user id.
     ///
-    /// ```rust,ignore
-    /// let token = SessionStore::get_token_by_user_id(&db, user_id, ip_address).await?;
+    /// ## Example
     ///
-    /// println!("🗝️ Token: {:?}", token);
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // User ID
+    /// let user_id = DbId::default();
+    ///
+    /// // IP address
+    /// let ip_address = "127.0.0.1".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let token = SessionModel::get_session_by_user_id(&db, user_id, ip_address).await;
+    ///
+    ///     println!("🗝️ Token: {:?}", token);
+    /// });
     /// ```
     pub async fn get_session_by_user_id<DB: DatabaseOperations + Send + Sync>(
         db: &DB, user_id: DbId, ip_address: String,
@@ -318,7 +388,31 @@ impl SessionModel {
         }
     }
 
-    /// Generate refresh token with encrypted user ID
+    /// # Generate refresh token with encrypted user ID
+    ///
+    /// The `generate_refresh_token` method generates a refresh token with an encrypted user ID.
+    ///
+    /// ## Example
+    ///
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::DbId;
+    ///
+    /// // User ID
+    /// let user_id = DbId::default();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///    let Ok((session_key, encrypted_user_id)) = SessionModel::generate_refresh_token(user_id).await else {
+    ///       panic!("Failed to generate refresh token");
+    ///   };
+    ///
+    ///   println!("🗝️ Session key: {:?}, Encrypted user ID: {:?}",
+    ///     session_key,
+    ///     encrypted_user_id,
+    ///   );
+    /// });
+    /// ```
     pub async fn generate_refresh_token(user_id: DbId) -> Result<(String, String), ClientError> {
         // Use the static key
         let key = &*ENCRYPTION_KEY;
@@ -339,10 +433,24 @@ impl SessionModel {
     ///
     /// The `delete_session` method deletes a session.
     ///
-    /// ```rust,ignore
-    /// SessionStore::delete_session(&db, session_id).await?;
+    /// ## Example
     ///
-    /// println!("🗝️ Session deleted");
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Session ID
+    /// let session_id = DbId::default();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     SessionModel::delete_session(&db, session_id).await;
+    ///
+    ///     println!("🗝️ Session deleted");
+    /// });
     /// ```
     pub async fn delete_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, session_id: DbId,
@@ -357,10 +465,24 @@ impl SessionModel {
     ///
     /// The `renew_session` method renews a session.
     ///
-    /// ```rust,ignore
-    /// let session = SessionStore::renew_session(&db, session_id).await?;
+    /// ## Example
     ///
-    /// println!("🗝️ Session renewed: {:?}", session);
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::{DbId, db_bridge::{Database, MockDatabaseOperations}};
+    ///
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Session ID
+    /// let session_id = DbId::default();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let session = SessionModel::renew_session(&db, session_id).await;
+    ///
+    ///     println!("🗝️ Session renewed: {:?}", session);
+    /// });
     /// ```
     pub async fn renew_session<DB: DatabaseOperations + Send + Sync>(
         db: &DB, session_id: DbId,
@@ -380,10 +502,20 @@ impl SessionModel {
     ///
     /// This method uses Argon2 to hash the password.
     ///
-    /// ```rust,ignore
-    /// let password_hash = SessionStore::create_password_hash(password).await?;
+    /// ## Example
     ///
-    /// println!("🔒 Password hash: {:?}", password_hash);
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    ///
+    /// // Password
+    /// let password = "test_password".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let password_hash = SessionModel::create_password_hash(password).await;
+    ///
+    ///     println!("🔒 Password hash: {:?}", password_hash);
+    /// });
     /// ```
     pub async fn create_password_hash(password: String) -> Result<String, ClientError> {
         let argon2 = Argon2::default();
@@ -401,10 +533,23 @@ impl SessionModel {
     ///
     /// This method use Argon2 to verify the password.
     ///
-    /// ```rust,ignore
-    /// let is_valid = SessionStore::verify_password(password, password_hash).await?;
+    /// ## Example
     ///
-    /// println!("🔒 Password is valid: {:?}", is_valid);
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    ///
+    /// // Password
+    /// let password = "test_password".to_string();
+    ///
+    /// // Password hash
+    /// let password_hash = "$argon2i$v=19$m=16,t=2,p=1$YTh0REFHYWFXY29yRDMwRw$mjA/znlpenQDoJUylwK3Hg".to_string();
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     let is_valid = SessionModel::verify_password(password, password_hash).await;
+    ///
+    ///     println!("🔒 Password is valid: {:?}", is_valid);
+    /// });
     /// ```
     pub async fn verify_password(
         password: String, password_hash: String,
@@ -423,10 +568,19 @@ impl SessionModel {
     ///
     /// The `destroy_all_sessions` method destroys all sessions
     ///
-    /// ```rust,ignore
-    /// SessionStore::destroy_all_sessions(&db).await?;
+    /// ```rust,no_run
+    /// use kiro_client::SessionModel;
+    /// use kiro_database::{db_bridge::{Database, MockDatabaseOperations}};
     ///
-    /// println!("🗝️ All sessions destroyed");
+    /// // Mock database
+    /// let db = Database::Mock(MockDatabaseOperations::new());
+    ///
+    /// // Async block to allow `await`
+    /// tokio::runtime::Runtime::new().unwrap().block_on(async {
+    ///     SessionModel::destroy_all_sessions(&db).await;
+    ///
+    ///     println!("🗝️ All sessions destroyed");
+    /// });
     /// ```
     pub async fn destroy_all_sessions<DB: DatabaseOperations + Send + Sync>(
         db: &DB,
