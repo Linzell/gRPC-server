@@ -1,0 +1,57 @@
+[package]
+name = "kiro_payment"
+description = "The payment client for the Kiro tool"
+version = "0.0.2"
+authors = ["Charlie Cohen <linzellart@gmail.com>"]
+homepage = "https://github.com/Linzell/API-Client"
+license = "GNU AGPLv3"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["tracing"]
+
+email = ["dep:lettre"]
+mock = []
+
+tracing = ["dep:tracing"]
+
+[dependencies]
+# General dependencies
+kiro_database = { workspace = true, features = ["surrealdb"] }
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Dependencies for the server
+async-trait = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tonic = { workspace = true }
+
+# Dependencies for the error handling
+thiserror = { workspace = true }
+
+# Testing dependencies
+mockall = { workspace = true }
+
+# Optional dependencies
+## Email dependencies
+lettre = { workspace = true, features = [
+    "builder",
+    "hostname",
+    "smtp-transport",
+    "tokio1",
+    "tokio1-rustls-tls",
+    "file-transport",
+    "serde",
+    "tracing",
+], optional = true }
+
+# Optional dependencies
+## Dependencies for tracing
+tracing = { workspace = true, optional = true, features = ["log"] }
+
+[dev-dependencies]
+mockito = { version = "1.5.0" }

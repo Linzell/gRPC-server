@@ -6,6 +6,7 @@ members = [
     "kiro-client",
     "kiro-database",
     "kiro-mailer",
+    "kiro-payment",
     "kiro-storage",
 ]
 
@@ -24,6 +25,7 @@ kiro_api = { path = "./kiro-api/rust" }
 kiro_client = { path = "./kiro-client" }
 kiro_database = { path = "./kiro-database" }
 kiro_mailer = { path = "./kiro-mailer" }
+kiro_payment = { path = "./kiro-payment" }
 kiro_storage = { path = "./kiro-storage" }
 
 # Global dependencies
