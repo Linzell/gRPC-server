@@ -29,7 +29,7 @@ pub fn build_common_protos(
         .type_attribute(".", "#[derive(utoipa::ToSchema)]")
         .extern_path(".google.protobuf", "crate::google::protobuf");
 
-    builder.compile(
+    builder.compile_protos(
         &[cs_dir
             .join("common/v1")
             .join("common.proto")

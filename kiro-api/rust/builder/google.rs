@@ -28,7 +28,7 @@ pub fn build_google_protos(
         .compile_well_known_types(config.compile_well_known_types)
         .type_attribute(".", "#[derive(utoipa::ToSchema)]");
 
-    builder.compile(
+    builder.compile_protos(
         &[
             proto_dir
                 .join("google/google/protobuf")

@@ -59,7 +59,7 @@ pub fn build_client_service(
         )
         .extern_path(".google.protobuf", "crate::google::protobuf");
 
-    builder.compile(
+    builder.compile_protos(
         &[
             cs_dir
                 .join("client/v1")

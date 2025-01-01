@@ -18,7 +18,7 @@ services:
       - "8080:8080"
   # ------------------- surrealdb ----------------------
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:1.4.5
     user: ${SURREAL_USER:-root}
     restart: unless-stopped
     command:
